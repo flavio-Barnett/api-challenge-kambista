@@ -3,6 +3,7 @@ import type { FactoryProvider, Provider } from '@nestjs/common';
 import { AccessTokenIssuer } from './application/ports/access-token-issuer.port.js';
 import { PasswordHasher } from './application/ports/password-hasher.port.js';
 import { SessionIssuerService } from './application/services/session-issuer.service.js';
+import { GetCurrentUserUseCase } from './application/use-cases/get-current-user.use-case.js';
 import { LogInUseCase } from './application/use-cases/log-in.use-case.js';
 import { RegisterUserUseCase } from './application/use-cases/register-user.use-case.js';
 import { UserRepository } from './domain/repositories/user.repository.js';
@@ -37,6 +38,7 @@ const useCases: Provider[] = [
     SessionIssuerService,
   ]),
   useCase(LogInUseCase, [UserRepository, PasswordHasher, SessionIssuerService]),
+  useCase(GetCurrentUserUseCase, [UserRepository]),
 ];
 
 export const authProviders: Provider[] = [...adapters, ...useCases];

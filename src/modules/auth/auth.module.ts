@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { AppConfig } from '../../shared/infrastructure/config/app-config.js';
 import { authProviders } from './auth.providers.js';
 import { AuthController } from './infrastructure/http/auth.controller.js';
+import { JwtAuthGuard } from './infrastructure/http/guards/jwt-auth.guard.js';
+import { RolesGuard } from './infrastructure/http/guards/roles.guard.js';
 import {
   USER_MODEL,
   userSchema,
@@ -24,6 +27,10 @@ import { accessTokenJwtOptions } from './infrastructure/security/jwt-options.js'
     }),
   ],
   controllers: [AuthController],
-  providers: authProviders,
+  providers: [
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+    ...authProviders,
+  ],
 })
 export class AuthModule {}
