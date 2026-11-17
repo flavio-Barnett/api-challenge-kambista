@@ -28,7 +28,15 @@ const restrictedDomainImports = {
 };
 
 export default defineConfig(
-  { ignores: ['dist/', 'coverage/', 'node_modules/', 'eslint.config.js'] },
+  {
+    ignores: [
+      'dist/',
+      'coverage/',
+      'node_modules/',
+      'eslint.config.js',
+      'commitlint.config.js',
+    ],
+  },
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
