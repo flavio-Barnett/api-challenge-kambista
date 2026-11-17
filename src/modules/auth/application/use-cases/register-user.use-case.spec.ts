@@ -32,6 +32,7 @@ describe('RegisterUserUseCase', () => {
     const session = await registerUser.execute(command);
 
     expect(session.accessToken).toBe(`access-token:${session.user.id}`);
+    expect(session.refreshToken).toBe('refresh-1');
   });
 
   it('rejects an email that is already registered', async () => {

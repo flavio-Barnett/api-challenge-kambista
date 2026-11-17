@@ -9,6 +9,10 @@ import { AuthController } from './infrastructure/http/auth.controller.js';
 import { JwtAuthGuard } from './infrastructure/http/guards/jwt-auth.guard.js';
 import { RolesGuard } from './infrastructure/http/guards/roles.guard.js';
 import {
+  REFRESH_TOKEN_MODEL,
+  refreshTokenSchema,
+} from './infrastructure/persistence/refresh-token.schema.js';
+import {
   USER_MODEL,
   userSchema,
 } from './infrastructure/persistence/user.schema.js';
@@ -16,7 +20,10 @@ import { accessTokenJwtOptions } from './infrastructure/security/jwt-options.js'
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: USER_MODEL, schema: userSchema }]),
+    MongooseModule.forFeature([
+      { name: USER_MODEL, schema: userSchema },
+      { name: REFRESH_TOKEN_MODEL, schema: refreshTokenSchema },
+    ]),
     JwtModule.registerAsync({
       inject: [AppConfig],
       useFactory: (config: AppConfig) =>

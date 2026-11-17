@@ -9,6 +9,15 @@ export class InvalidCredentialsError extends DomainError {
   }
 }
 
+export class InvalidRefreshTokenError extends DomainError {
+  readonly code = 'INVALID_REFRESH_TOKEN';
+  readonly kind = 'unauthorized';
+
+  constructor() {
+    super('El refresh token no es válido o expiró');
+  }
+}
+
 export class InvalidSessionError extends DomainError {
   readonly code = 'INVALID_SESSION';
   readonly kind = 'unauthorized';

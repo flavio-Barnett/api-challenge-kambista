@@ -4,6 +4,7 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiUnauthorizedResponse,
@@ -55,5 +56,25 @@ export function ApiCurrentUser(): MethodDecorator {
       description:
         'Token ausente, inválido o expirado, o sesión que ya no es válida',
     }),
+  );
+}
+
+export function ApiRefreshSession(): MethodDecorator {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Renueva la sesión y rota el refresh token',
+    }),
+    ApiOkResponse({ type: AuthResponseDto }),
+    ApiUnauthorizedResponse({
+      type: ErrorResponseDto,
+      description: 'Refresh token inválido, expirado o reutilizado',
+    }),
+  );
+}
+
+export function ApiLogOut(): MethodDecorator {
+  return applyDecorators(
+    ApiOperation({ summary: 'Cierra la sesión revocando el refresh token' }),
+    ApiNoContentResponse({ description: 'Sesión cerrada' }),
   );
 }

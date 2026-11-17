@@ -16,7 +16,7 @@ Primero crea el archivo de entorno:
 cp .env.example .env
 ```
 
-Los valores de `.env.example` sirven para desarrollo local. En cualquier otro entorno usa secretos propios para `JWT_ACCESS_SECRET` y `JWT_REFRESH_SECRET`: mínimo 32 caracteres y distintos entre sí. Puedes generarlos con:
+Los valores de `.env.example` sirven para desarrollo local. En cualquier otro entorno usa un secreto propio para `JWT_ACCESS_SECRET` (mínimo 32 caracteres). Puedes generarlo con:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
@@ -54,8 +54,7 @@ Se validan con Zod al iniciar: si falta alguna obligatoria o tiene un formato in
 | `MONGODB_URI`                       | Sí          | —                                              | Cadena de conexión a MongoDB                             |
 | `JWT_ACCESS_SECRET`                 | Sí          | —                                              | Secreto del access token (mínimo 32 caracteres)          |
 | `JWT_ACCESS_EXPIRES_IN`             | No          | `15m`                                          | Duración del access token (`30s`, `15m`, `12h`, `7d`)    |
-| `JWT_REFRESH_SECRET`                | Sí          | —                                              | Secreto del refresh token, distinto al del access        |
-| `JWT_REFRESH_EXPIRES_IN`            | No          | `7d`                                           | Duración del refresh token                               |
+| `REFRESH_TOKEN_EXPIRES_IN`          | No          | `7d`                                           | Duración del refresh token                               |
 | `CORS_ORIGINS`                      | No          | vacío                                          | Orígenes permitidos, separados por comas                 |
 | `EXCHANGE_RATE_PROVIDER_URL`        | No          | `https://api.apis.net.pe/v1/tipo-cambio-sunat` | Proveedor externo del tipo de cambio                     |
 | `EXCHANGE_RATE_REFRESH_INTERVAL_MS` | No          | `30000`                                        | Cada cuántos milisegundos se actualiza el tipo de cambio |

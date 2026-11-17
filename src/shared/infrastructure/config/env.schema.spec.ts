@@ -3,7 +3,6 @@ import { envSchema } from './env.schema.js';
 const validEnv = {
   MONGODB_URI: 'mongodb://localhost:27017/kambista',
   JWT_ACCESS_SECRET: 'a'.repeat(32),
-  JWT_REFRESH_SECRET: 'b'.repeat(32),
 };
 
 describe('envSchema', () => {
@@ -14,7 +13,7 @@ describe('envSchema', () => {
       NODE_ENV: 'development',
       PORT: 3000,
       JWT_ACCESS_EXPIRES_IN: 15 * 60 * 1000,
-      JWT_REFRESH_EXPIRES_IN: 7 * 24 * 60 * 60 * 1000,
+      REFRESH_TOKEN_EXPIRES_IN: 7 * 24 * 60 * 60 * 1000,
       CORS_ORIGINS: [],
       EXCHANGE_RATE_PROVIDER_URL:
         'https://api.apis.net.pe/v1/tipo-cambio-sunat',
@@ -62,15 +61,6 @@ describe('envSchema', () => {
       expect(result.success).toBe(false);
     },
   );
-
-  it('rejects identical access and refresh secrets', () => {
-    const result = envSchema.safeParse({
-      ...validEnv,
-      JWT_REFRESH_SECRET: validEnv.JWT_ACCESS_SECRET,
-    });
-
-    expect(result.success).toBe(false);
-  });
 
   it.each([
     ['30s', 30 * 1000],

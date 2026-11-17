@@ -34,30 +34,24 @@ const tokenLifetime = z
   .regex(DURATION_PATTERN, 'Expected a duration such as 30s, 15m, 12h or 7d')
   .transform(toMilliseconds);
 
-export const envSchema = z
-  .object({
-    NODE_ENV: z
-      .enum(['development', 'production', 'test'])
-      .default('development'),
-    PORT: z.coerce.number().int().positive().default(3000),
-    MONGODB_URI: z.string().min(1),
-    JWT_ACCESS_SECRET: z.string().min(32),
-    JWT_ACCESS_EXPIRES_IN: tokenLifetime.prefault('15m'),
-    JWT_REFRESH_SECRET: z.string().min(32),
-    JWT_REFRESH_EXPIRES_IN: tokenLifetime.prefault('7d'),
-    CORS_ORIGINS: commaSeparatedList,
-    EXCHANGE_RATE_PROVIDER_URL: z
-      .url()
-      .default('https://api.apis.net.pe/v1/tipo-cambio-sunat'),
-    EXCHANGE_RATE_REFRESH_INTERVAL_MS: z.coerce
-      .number()
-      .int()
-      .positive()
-      .default(30000),
-  })
-  .refine((env) => env.JWT_ACCESS_SECRET !== env.JWT_REFRESH_SECRET, {
-    message: 'JWT_REFRESH_SECRET must differ from JWT_ACCESS_SECRET',
-    path: ['JWT_REFRESH_SECRET'],
-  });
+export const envSchema = z.object({
+  NODE_ENV: z
+    .enum(['development', 'production', 'test'])
+    .default('development'),
+  PORT: z.coerce.number().int().positive().default(3000),
+  MONGODB_URI: z.string().min(1),
+  JWT_ACCESS_SECRET: z.string().min(32),
+  JWT_ACCESS_EXPIRES_IN: tokenLifetime.prefault('15m'),
+  REFRESH_TOKEN_EXPIRES_IN: tokenLifetime.prefault('7d'),
+  CORS_ORIGINS: commaSeparatedList,
+  EXCHANGE_RATE_PROVIDER_URL: z
+    .url()
+    .default('https://api.apis.net.pe/v1/tipo-cambio-sunat'),
+  EXCHANGE_RATE_REFRESH_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(30000),
+});
 
 export type Env = z.infer<typeof envSchema>;

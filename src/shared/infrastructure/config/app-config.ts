@@ -39,11 +39,8 @@ export class AppConfig {
     };
   }
 
-  get refreshToken(): JwtTokenConfig {
-    return {
-      secret: this.get('JWT_REFRESH_SECRET'),
-      ttlMs: this.get('JWT_REFRESH_EXPIRES_IN'),
-    };
+  get refreshTokenTtlMs(): number {
+    return this.get('REFRESH_TOKEN_EXPIRES_IN');
   }
 
   get exchangeRateProviderUrl(): string {
