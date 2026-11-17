@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+
 import { REQUEST_ID_HEADER, resolveRequestId } from './request-id.js';
 
 const UUID_PATTERN =

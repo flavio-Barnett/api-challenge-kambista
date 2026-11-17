@@ -16,7 +16,7 @@ Primero crea el archivo de entorno:
 cp .env.example .env
 ```
 
-Los valores de `.env.example` sirven para desarrollo local. En cualquier otro entorno usa secretos propios para `JWT_ACCESS_SECRET` y `JWT_REFRESH_SECRET`: mínimo 32 caracteres y distintos entre sí. Puedes generarlos con:
+Los valores de `.env.example` sirven para desarrollo local. En cualquier otro entorno usa un secreto propio para `JWT_ACCESS_SECRET` (mínimo 32 caracteres). Puedes generarlo con:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
@@ -47,18 +47,18 @@ Con la API en marcha:
 
 Se validan con Zod al iniciar: si falta alguna obligatoria o tiene un formato inválido, la aplicación no arranca e indica cuál es el problema. Los valores de ejemplo están en `.env.example`.
 
-| Variable                            | Obligatoria | Valor por defecto                              | Descripción                                              |
-| ----------------------------------- | ----------- | ---------------------------------------------- | -------------------------------------------------------- |
-| `NODE_ENV`                          | No          | `development`                                  | `development`, `production` o `test`                     |
-| `PORT`                              | No          | `3000`                                         | Puerto HTTP                                              |
-| `MONGODB_URI`                       | Sí          | —                                              | Cadena de conexión a MongoDB                             |
-| `JWT_ACCESS_SECRET`                 | Sí          | —                                              | Secreto del access token (mínimo 32 caracteres)          |
-| `JWT_ACCESS_EXPIRES_IN`             | No          | `15m`                                          | Duración del access token (`30s`, `15m`, `12h`, `7d`)    |
-| `JWT_REFRESH_SECRET`                | Sí          | —                                              | Secreto del refresh token, distinto al del access        |
-| `JWT_REFRESH_EXPIRES_IN`            | No          | `7d`                                           | Duración del refresh token                               |
-| `CORS_ORIGINS`                      | No          | vacío                                          | Orígenes permitidos, separados por comas                 |
-| `EXCHANGE_RATE_PROVIDER_URL`        | No          | `https://api.apis.net.pe/v1/tipo-cambio-sunat` | Proveedor externo del tipo de cambio                     |
-| `EXCHANGE_RATE_REFRESH_INTERVAL_MS` | No          | `30000`                                        | Cada cuántos milisegundos se actualiza el tipo de cambio |
+| Variable                            | Obligatoria | Valor por defecto                              | Descripción                                                               |
+| ----------------------------------- | ----------- | ---------------------------------------------- | ------------------------------------------------------------------------- |
+| `NODE_ENV`                          | No          | `development`                                  | `development`, `production` o `test`                                      |
+| `PORT`                              | No          | `3000`                                         | Puerto HTTP                                                               |
+| `MONGODB_URI`                       | Sí          | —                                              | Cadena de conexión a MongoDB                                              |
+| `JWT_ACCESS_SECRET`                 | Sí          | —                                              | Secreto del access token (mínimo 32 caracteres)                           |
+| `JWT_ACCESS_EXPIRES_IN`             | No          | `15m`                                          | Duración del access token (`30s`, `15m`, `12h`, `7d`)                     |
+| `REFRESH_TOKEN_EXPIRES_IN`          | No          | `7d`                                           | Duración del refresh token                                                |
+| `CORS_ORIGINS`                      | No          | vacío                                          | Orígenes permitidos, separados por comas                                  |
+| `TRUST_PROXY_HOPS`                  | No          | `0`                                            | Proxies delante de la API; define de dónde se toma la IP real del cliente |
+| `EXCHANGE_RATE_PROVIDER_URL`        | No          | `https://api.apis.net.pe/v1/tipo-cambio-sunat` | Proveedor externo del tipo de cambio                                      |
+| `EXCHANGE_RATE_REFRESH_INTERVAL_MS` | No          | `30000`                                        | Cada cuántos milisegundos se actualiza el tipo de cambio                  |
 
 ## Pruebas
 
@@ -67,26 +67,85 @@ npm test            # pruebas unitarias
 npm run test:cov    # pruebas unitarias con reporte de cobertura
 ```
 
+## Autenticación
+
+| Método | Ruta                | Acceso  | Descripción                                                 |
+| ------ | ------------------- | ------- | ----------------------------------------------------------- |
+| POST   | `/v1/auth/register` | Público | Registra un usuario con rol `user` e inicia su sesión       |
+| POST   | `/v1/auth/login`    | Público | Devuelve `access_token`, `refresh_token` y `usuario`        |
+| POST   | `/v1/auth/refresh`  | Público | Entrega un nuevo par de tokens a cambio del `refresh_token` |
+| POST   | `/v1/auth/logout`   | Público | Revoca el `refresh_token`                                   |
+| GET    | `/v1/auth/me`       | Token   | Devuelve el usuario autenticado                             |
+
+Las rutas protegidas esperan el header `Authorization: Bearer <access_token>`.
+
+### Crear un administrador
+
+Todos los registros obtienen el rol `user`. Para dar el rol `admin` a un usuario existente:
+
+```bash
+npm run build
+npm run user:promote -- ana@kambista.com
+```
+
+Con Docker: `docker compose exec api npm run user:promote -- ana@kambista.com`.
+
 ## Arquitectura
 
-Clean Architecture implementada con puertos y adaptadores (hexagonal), organizada por módulos de dominio (DDD). Las capas `domain` y `application` son TypeScript puro: definen puertos que la capa `infrastructure` implementa y nunca importan NestJS, Mongoose ni otras librerías de infraestructura.
+Clean Architecture implementada con puertos y adaptadores (hexagonal), organizada por módulos de dominio (DDD). Las capas `domain` y `application` son TypeScript puro: no importan NestJS, Mongoose ni otras librerías de infraestructura, y ESLint lo verifica.
 
 ```
 src/
 ├── main.ts
 ├── app.module.ts
-├── shared/
-│   ├── domain/            # Piezas comunes del dominio (DomainError)
-│   └── infrastructure/    # Configuración, base de datos, logs, HTTP y health check
+├── shared/                      # Piezas transversales sin reglas de negocio
+│   ├── domain/                  # DomainError y puerto Clock
+│   └── infrastructure/          # Configuración, base de datos, logs, HTTP y health check
 └── modules/
-    └── <contexto>/
-        ├── domain/        # Entidades, value objects, errores y puertos
-        ├── application/   # Casos de uso
-        └── infrastructure/# Adaptadores: controladores, persistencia, APIs externas
+    └── auth/
+        ├── domain/              # Reglas del negocio
+        │   ├── entities/        # User
+        │   ├── value-objects/   # Email, Role
+        │   └── repositories/    # Contrato UserRepository
+        ├── application/         # Qué hace el sistema
+        │   ├── use-cases/       # Un caso de uso por operación
+        │   ├── ports/           # Contratos que implementa la infraestructura
+        │   └── services/        # Lógica compartida entre casos de uso
+        └── infrastructure/      # Cómo se conecta con el exterior
+            ├── http/            # Controller, documentación, dto/ y guards/
+            ├── persistence/     # Esquemas y adaptadores de MongoDB
+            ├── security/        # bcrypt, JWT y refresh tokens
+            └── cli/             # Scripts de administración
 ```
+
+**Convención de nombres:** el sufijo del archivo indica su rol (`user.entity.ts`, `log-in.use-case.ts`, `password-hasher.port.ts`, `bcrypt-password-hasher.adapter.ts`). Las clases técnicas llevan ese rol en su nombre (`LogInUseCase`, `BcryptPasswordHasherAdapter`); el modelo de dominio y los puertos usan nombres del negocio (`User`, `Email`, `PasswordHasher`), y los adaptadores llevan como prefijo la tecnología que usan (`mongo`, `bcrypt`, `jwt`).
 
 ## Decisiones técnicas
 
 - **Límites de arquitectura verificados por ESLint:** `domain` y `application` no pueden importar frameworks ni infraestructura; si alguien rompe la regla, el lint y la CI fallan.
 - **Errores de dominio independientes de HTTP:** el dominio lanza errores con un `code` y un `kind`; un filtro global los traduce a un único formato de respuesta, `{ "success": false, "error": { "code", "message" } }`, sin exponer detalles internos.
 - **Configuración validada al arrancar:** un esquema Zod valida el entorno y la aplicación no inicia si algo falta o es inválido.
+- **Rutas protegidas por defecto:** un guard global exige JWT en todas las rutas; solo las marcadas como públicas (registro, login, refresh, logout y health) quedan abiertas.
+- **Access token corto y refresh token rotado:** el JWT dura 15 minutos; el refresh token es un valor aleatorio que se guarda como hash SHA-256 y se reemplaza en cada uso. Reutilizar uno ya usado revoca todas las sesiones del usuario.
+- **Contraseñas con bcrypt (costo 12):** el login responde el mismo 401 si el email no existe o la contraseña es incorrecta, y en ambos casos ejecuta una comparación para no revelar qué emails están registrados.
+- **Límite de intentos de login en MongoDB:** cada intento se cuenta de forma atómica antes de verificar la contraseña; superados 5 intentos fallidos por email e IP en 15 minutos, la API responde 429. Se guarda en Mongo con índice TTL para que funcione con varias instancias de la API.
+
+### Riesgos conocidos
+
+- **El logout no invalida el access token:** el JWT sigue siendo válido hasta que expira (máximo 15 minutos); por eso su duración es corta.
+- **El registro revela si un email existe:** responde 409 y no tiene límite de intentos. Es un compromiso habitual para dar un mensaje claro al usuario.
+- **Solo el login tiene límite de peticiones:** un límite global contra abuso corresponde al API gateway o al balanceador.
+- **Swagger es público:** `/docs` queda abierto para facilitar la evaluación; en un entorno productivo se restringiría.
+
+### Índices de MongoDB
+
+Cada índice responde a una consulta concreta:
+
+| Colección        | Índice                   | Consulta que lo justifica                              |
+| ---------------- | ------------------------ | ------------------------------------------------------ |
+| `users`          | `{ email: 1 }` único     | Login por email y garantía de email único              |
+| `refresh_tokens` | `{ tokenHash: 1 }` único | Refresh y logout buscan el token por su hash           |
+| `refresh_tokens` | `{ userId: 1 }`          | Revocar todas las sesiones de un usuario ante un reuso |
+| `refresh_tokens` | `{ expiresAt: 1 }` TTL   | MongoDB elimina los tokens vencidos automáticamente    |
+| `login_attempts` | `{ key: 1 }` único       | Consultar y actualizar los fallos de un email e IP     |
+| `login_attempts` | `{ expiresAt: 1 }` TTL   | La ventana de 15 minutos se limpia sola                |

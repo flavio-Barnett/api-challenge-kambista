@@ -5,7 +5,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import type { ErrorResponse } from './error-response.js';
+
+import type { ErrorResponse } from './error-response.type.js';
 import { resolveError } from './resolve-error.js';
 
 const SERVER_ERROR_STATUS_FLOOR = 500;

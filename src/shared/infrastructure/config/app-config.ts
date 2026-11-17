@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
 import type { Env } from './env.schema.js';
 
-export interface JwtTokenConfig {
+interface JwtTokenConfig {
   readonly secret: string;
-  readonly expiresIn: string;
+  readonly ttlMs: number;
 }
 
 @Injectable()
@@ -31,18 +32,19 @@ export class AppConfig {
     return this.get('CORS_ORIGINS');
   }
 
+  get trustProxyHops(): number {
+    return this.get('TRUST_PROXY_HOPS');
+  }
+
   get accessToken(): JwtTokenConfig {
     return {
       secret: this.get('JWT_ACCESS_SECRET'),
-      expiresIn: this.get('JWT_ACCESS_EXPIRES_IN'),
+      ttlMs: this.get('JWT_ACCESS_EXPIRES_IN'),
     };
   }
 
-  get refreshToken(): JwtTokenConfig {
-    return {
-      secret: this.get('JWT_REFRESH_SECRET'),
-      expiresIn: this.get('JWT_REFRESH_EXPIRES_IN'),
-    };
+  get refreshTokenTtlMs(): number {
+    return this.get('REFRESH_TOKEN_EXPIRES_IN');
   }
 
   get exchangeRateProviderUrl(): string {

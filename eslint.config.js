@@ -1,11 +1,18 @@
 import eslint from '@eslint/js';
 import prettier from 'eslint-config-prettier';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import globals from 'globals';
 import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
+const testDoublesPattern = {
+  group: ['**/testing/**', '**/testing'],
+  message: 'Test doubles may only be imported from spec files.',
+};
+
 const restrictedCoreImports = {
   patterns: [
+    testDoublesPattern,
     {
       group: ['@nestjs/*', 'mongoose', 'bcrypt', 'jsonwebtoken'],
       message: 'Domain and application layers must stay framework-agnostic.',
@@ -49,7 +56,10 @@ export default defineConfig(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    plugins: { 'simple-import-sort': simpleImportSort },
     rules: {
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/explicit-function-return-type': [
@@ -74,13 +84,22 @@ export default defineConfig(
     },
   },
   {
+    files: ['src/**/*.ts'],
+    ignores: ['src/**/*.spec.ts', 'src/**/testing/**'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [testDoublesPattern] }],
+    },
+  },
+  {
     files: ['src/**/domain/**/*.ts', 'src/**/application/**/*.ts'],
+    ignores: ['src/**/*.spec.ts'],
     rules: {
       'no-restricted-imports': ['error', restrictedCoreImports],
     },
   },
   {
     files: ['src/**/domain/**/*.ts'],
+    ignores: ['src/**/*.spec.ts'],
     rules: {
       'no-restricted-imports': ['error', restrictedDomainImports],
     },

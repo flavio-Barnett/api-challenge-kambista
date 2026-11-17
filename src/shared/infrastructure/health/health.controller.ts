@@ -6,8 +6,11 @@ import {
   MongooseHealthIndicator,
 } from '@nestjs/terminus';
 
+import { Public } from '../http/public.decorator.js';
+
 export const HEALTH_PATH = 'health';
 
+@Public()
 @Controller({ path: HEALTH_PATH, version: VERSION_NEUTRAL })
 export class HealthController {
   constructor(

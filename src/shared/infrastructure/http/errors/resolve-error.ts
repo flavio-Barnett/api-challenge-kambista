@@ -1,9 +1,10 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
+
 import {
   DomainError,
   type DomainErrorKind,
 } from '../../../domain/domain-error.js';
-import type { ResolvedError } from './error-response.js';
+import type { ErrorBody, ResolvedError } from './error-response.type.js';
 
 const STATUS_BY_KIND: Record<DomainErrorKind, HttpStatus> = {
   validation: HttpStatus.BAD_REQUEST,
@@ -15,21 +16,50 @@ const STATUS_BY_KIND: Record<DomainErrorKind, HttpStatus> = {
   unavailable: HttpStatus.SERVICE_UNAVAILABLE,
 };
 
-const CODE_BY_STATUS: Partial<Record<number, string>> = {
-  [HttpStatus.BAD_REQUEST]: 'VALIDATION_ERROR',
-  [HttpStatus.UNAUTHORIZED]: 'UNAUTHORIZED',
-  [HttpStatus.FORBIDDEN]: 'FORBIDDEN',
-  [HttpStatus.NOT_FOUND]: 'NOT_FOUND',
-  [HttpStatus.CONFLICT]: 'CONFLICT',
-  [HttpStatus.PAYLOAD_TOO_LARGE]: 'PAYLOAD_TOO_LARGE',
-  [HttpStatus.TOO_MANY_REQUESTS]: 'TOO_MANY_REQUESTS',
-  [HttpStatus.SERVICE_UNAVAILABLE]: 'SERVICE_UNAVAILABLE',
+const HTTP_ERRORS: Partial<Record<number, ErrorBody>> = {
+  [HttpStatus.BAD_REQUEST]: {
+    code: 'VALIDATION_ERROR',
+    message: 'La solicitud no es válida',
+  },
+  [HttpStatus.UNAUTHORIZED]: {
+    code: 'UNAUTHORIZED',
+    message: 'Se requiere autenticación',
+  },
+  [HttpStatus.FORBIDDEN]: {
+    code: 'FORBIDDEN',
+    message: 'No tienes permisos para realizar esta acción',
+  },
+  [HttpStatus.NOT_FOUND]: {
+    code: 'NOT_FOUND',
+    message: 'El recurso solicitado no existe',
+  },
+  [HttpStatus.CONFLICT]: {
+    code: 'CONFLICT',
+    message: 'La solicitud entra en conflicto con el estado actual',
+  },
+  [HttpStatus.PAYLOAD_TOO_LARGE]: {
+    code: 'PAYLOAD_TOO_LARGE',
+    message: 'El cuerpo de la solicitud es demasiado grande',
+  },
+  [HttpStatus.TOO_MANY_REQUESTS]: {
+    code: 'TOO_MANY_REQUESTS',
+    message: 'Demasiadas solicitudes, intenta nuevamente más tarde',
+  },
+  [HttpStatus.SERVICE_UNAVAILABLE]: {
+    code: 'SERVICE_UNAVAILABLE',
+    message: 'El servicio no está disponible temporalmente',
+  },
+};
+
+const UNKNOWN_HTTP_ERROR: ErrorBody = {
+  code: 'HTTP_ERROR',
+  message: 'No se pudo procesar la solicitud',
 };
 
 const INTERNAL_ERROR: ResolvedError = {
   status: HttpStatus.INTERNAL_SERVER_ERROR,
   code: 'INTERNAL_ERROR',
-  message: 'An unexpected error occurred',
+  message: 'Ocurrió un error inesperado',
 };
 
 function fromDomainError(error: DomainError): ResolvedError {
@@ -42,11 +72,7 @@ function fromDomainError(error: DomainError): ResolvedError {
 
 function fromHttpException(exception: HttpException): ResolvedError {
   const status = exception.getStatus();
-  return {
-    status,
-    code: CODE_BY_STATUS[status] ?? 'HTTP_ERROR',
-    message: exception.message,
-  };
+  return { status, ...(HTTP_ERRORS[status] ?? UNKNOWN_HTTP_ERROR) };
 }
 
 export function resolveError(exception: unknown): ResolvedError {

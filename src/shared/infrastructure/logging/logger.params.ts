@@ -1,8 +1,11 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+
 import type { Params } from 'nestjs-pino';
 import type { LevelWithSilent, TransportSingleOptions } from 'pino';
+
 import type { Env } from '../config/env.schema.js';
 import { HEALTH_PATH } from '../health/health.controller.js';
+import { requestUserId } from '../http/request-user.js';
 import { resolveRequestId } from './request-id.js';
 
 const REDACTED_PATHS = [
@@ -12,10 +15,14 @@ const REDACTED_PATHS = [
   'token',
   'accessToken',
   'refreshToken',
+  'access_token',
+  'refresh_token',
   '*.password',
   '*.token',
   '*.accessToken',
   '*.refreshToken',
+  '*.access_token',
+  '*.refresh_token',
 ];
 
 type NodeEnv = Env['NODE_ENV'];
@@ -51,6 +58,9 @@ export function buildLoggerParams(nodeEnv: NodeEnv): Params {
       level: LOG_LEVELS[nodeEnv],
       genReqId: resolveRequestId,
       customLogLevel: resolveLogLevel,
+      customProps: (request: IncomingMessage) => ({
+        userId: requestUserId(request),
+      }),
       autoLogging: { ignore: isHealthProbe },
       redact: { paths: REDACTED_PATHS, censor: '[REDACTED]' },
       transport: TRANSPORTS[nodeEnv],
