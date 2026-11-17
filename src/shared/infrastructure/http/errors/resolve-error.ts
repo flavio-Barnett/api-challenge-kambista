@@ -23,6 +23,7 @@ const CODE_BY_STATUS: Partial<Record<number, string>> = {
   [HttpStatus.CONFLICT]: 'CONFLICT',
   [HttpStatus.PAYLOAD_TOO_LARGE]: 'PAYLOAD_TOO_LARGE',
   [HttpStatus.TOO_MANY_REQUESTS]: 'TOO_MANY_REQUESTS',
+  [HttpStatus.SERVICE_UNAVAILABLE]: 'SERVICE_UNAVAILABLE',
 };
 
 const INTERNAL_ERROR: ResolvedError = {

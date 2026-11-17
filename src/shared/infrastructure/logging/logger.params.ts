@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Params } from 'nestjs-pino';
 import type { LevelWithSilent, TransportSingleOptions } from 'pino';
 import type { Env } from '../config/env.schema.js';
+import { HEALTH_PATH } from '../health/health.controller.js';
 import { resolveRequestId } from './request-id.js';
 
 const REDACTED_PATHS = [
@@ -40,12 +41,17 @@ export function resolveLogLevel(
   return response.statusCode >= 400 ? 'warn' : 'info';
 }
 
+function isHealthProbe(request: IncomingMessage): boolean {
+  return request.url === `/${HEALTH_PATH}`;
+}
+
 export function buildLoggerParams(nodeEnv: NodeEnv): Params {
   return {
     pinoHttp: {
       level: LOG_LEVELS[nodeEnv],
       genReqId: resolveRequestId,
       customLogLevel: resolveLogLevel,
+      autoLogging: { ignore: isHealthProbe },
       redact: { paths: REDACTED_PATHS, censor: '[REDACTED]' },
       transport: TRANSPORTS[nodeEnv],
     },

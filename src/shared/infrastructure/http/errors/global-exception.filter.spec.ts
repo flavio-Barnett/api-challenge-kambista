@@ -1,4 +1,9 @@
-import { type ArgumentsHost, Logger, NotFoundException } from '@nestjs/common';
+import {
+  type ArgumentsHost,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { DomainError } from '../../../domain/domain-error.js';
 import { GlobalExceptionFilter } from './global-exception.filter.js';
 import { RequestValidationError } from './request-validation.error.js';
@@ -99,17 +104,27 @@ describe('GlobalExceptionFilter', () => {
     });
   });
 
-  it('maps framework http exceptions by status', () => {
-    const { host, status, json } = createHost();
+  it.each([
+    [new NotFoundException('Cannot GET /missing'), 404, 'NOT_FOUND'],
+    [
+      new ServiceUnavailableException('Service Unavailable Exception'),
+      503,
+      'SERVICE_UNAVAILABLE',
+    ],
+  ])(
+    'maps framework http exceptions by status',
+    (exception, expectedStatus, expectedCode) => {
+      const { host, status, json } = createHost();
 
-    filter.catch(new NotFoundException('Cannot GET /missing'), host);
+      filter.catch(exception, host);
 
-    expect(status).toHaveBeenCalledWith(404);
-    expect(json).toHaveBeenCalledWith({
-      success: false,
-      error: { code: 'NOT_FOUND', message: 'Cannot GET /missing' },
-    });
-  });
+      expect(status).toHaveBeenCalledWith(expectedStatus);
+      expect(json).toHaveBeenCalledWith({
+        success: false,
+        error: { code: expectedCode, message: exception.message },
+      });
+    },
+  );
 
   it('hides unknown errors behind INTERNAL_ERROR and logs them', () => {
     const { host, status, json } = createHost();
