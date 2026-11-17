@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger } from 'nestjs-pino';
+
 import { AppModule } from './app.module.js';
 import { AppConfig } from './shared/infrastructure/config/app-config.js';
 import { configureApp } from './shared/infrastructure/http/configure-app.js';

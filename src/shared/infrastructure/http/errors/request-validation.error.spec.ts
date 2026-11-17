@@ -1,4 +1,5 @@
 import type { ValidationError } from 'class-validator';
+
 import { RequestValidationError } from './request-validation.error.js';
 
 describe('RequestValidationError', () => {

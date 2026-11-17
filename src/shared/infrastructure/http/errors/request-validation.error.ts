@@ -1,4 +1,5 @@
 import type { ValidationError } from 'class-validator';
+
 import { DomainError } from '../../../domain/domain-error.js';
 
 function collectMessages(errors: readonly ValidationError[]): string[] {

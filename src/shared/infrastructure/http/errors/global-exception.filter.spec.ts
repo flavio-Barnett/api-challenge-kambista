@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
+
 import { DomainError } from '../../../domain/domain-error.js';
 import { GlobalExceptionFilter } from './global-exception.filter.js';
 import { RequestValidationError } from './request-validation.error.js';

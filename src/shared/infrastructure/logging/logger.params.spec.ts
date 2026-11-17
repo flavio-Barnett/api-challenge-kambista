@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+
 import { resolveLogLevel } from './logger.params.js';
 
 const request = {} as IncomingMessage;

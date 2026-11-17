@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+
 import { AppConfigModule } from './shared/infrastructure/config/app-config.module.js';
 import { DatabaseModule } from './shared/infrastructure/database/database.module.js';
 import { HealthModule } from './shared/infrastructure/health/health.module.js';
