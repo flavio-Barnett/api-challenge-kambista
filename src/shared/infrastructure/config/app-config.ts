@@ -32,6 +32,10 @@ export class AppConfig {
     return this.get('CORS_ORIGINS');
   }
 
+  get trustProxyHops(): number {
+    return this.get('TRUST_PROXY_HOPS');
+  }
+
   get accessToken(): JwtTokenConfig {
     return {
       secret: this.get('JWT_ACCESS_SECRET'),

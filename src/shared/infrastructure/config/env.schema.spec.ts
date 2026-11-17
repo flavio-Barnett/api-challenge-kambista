@@ -15,6 +15,7 @@ describe('envSchema', () => {
       JWT_ACCESS_EXPIRES_IN: 15 * 60 * 1000,
       REFRESH_TOKEN_EXPIRES_IN: 7 * 24 * 60 * 60 * 1000,
       CORS_ORIGINS: [],
+      TRUST_PROXY_HOPS: 0,
       EXCHANGE_RATE_PROVIDER_URL:
         'https://api.apis.net.pe/v1/tipo-cambio-sunat',
       EXCHANGE_RATE_REFRESH_INTERVAL_MS: 30000,

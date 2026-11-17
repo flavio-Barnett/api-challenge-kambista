@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Ip,
   Post,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -56,10 +57,14 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiLogIn()
-  async login(@Body() dto: LogInDto): Promise<AuthResponseDto> {
+  async login(
+    @Body() dto: LogInDto,
+    @Ip() ipAddress: string,
+  ): Promise<AuthResponseDto> {
     const session = await this.logIn.execute({
       email: dto.email,
       password: dto.password,
+      ipAddress,
     });
     return AuthResponseDto.fromSession(session);
   }

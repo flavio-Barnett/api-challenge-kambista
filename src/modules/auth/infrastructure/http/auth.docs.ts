@@ -7,6 +7,7 @@ import {
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
@@ -42,6 +43,10 @@ export function ApiLogIn(): MethodDecorator {
     ApiUnauthorizedResponse({
       type: ErrorResponseDto,
       description: 'Email o contraseña incorrectos',
+    }),
+    ApiTooManyRequestsResponse({
+      type: ErrorResponseDto,
+      description: 'Demasiados intentos fallidos para ese email desde esa IP',
     }),
   );
 }

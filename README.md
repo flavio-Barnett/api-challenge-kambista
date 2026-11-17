@@ -47,17 +47,18 @@ Con la API en marcha:
 
 Se validan con Zod al iniciar: si falta alguna obligatoria o tiene un formato inválido, la aplicación no arranca e indica cuál es el problema. Los valores de ejemplo están en `.env.example`.
 
-| Variable                            | Obligatoria | Valor por defecto                              | Descripción                                              |
-| ----------------------------------- | ----------- | ---------------------------------------------- | -------------------------------------------------------- |
-| `NODE_ENV`                          | No          | `development`                                  | `development`, `production` o `test`                     |
-| `PORT`                              | No          | `3000`                                         | Puerto HTTP                                              |
-| `MONGODB_URI`                       | Sí          | —                                              | Cadena de conexión a MongoDB                             |
-| `JWT_ACCESS_SECRET`                 | Sí          | —                                              | Secreto del access token (mínimo 32 caracteres)          |
-| `JWT_ACCESS_EXPIRES_IN`             | No          | `15m`                                          | Duración del access token (`30s`, `15m`, `12h`, `7d`)    |
-| `REFRESH_TOKEN_EXPIRES_IN`          | No          | `7d`                                           | Duración del refresh token                               |
-| `CORS_ORIGINS`                      | No          | vacío                                          | Orígenes permitidos, separados por comas                 |
-| `EXCHANGE_RATE_PROVIDER_URL`        | No          | `https://api.apis.net.pe/v1/tipo-cambio-sunat` | Proveedor externo del tipo de cambio                     |
-| `EXCHANGE_RATE_REFRESH_INTERVAL_MS` | No          | `30000`                                        | Cada cuántos milisegundos se actualiza el tipo de cambio |
+| Variable                            | Obligatoria | Valor por defecto                              | Descripción                                                               |
+| ----------------------------------- | ----------- | ---------------------------------------------- | ------------------------------------------------------------------------- |
+| `NODE_ENV`                          | No          | `development`                                  | `development`, `production` o `test`                                      |
+| `PORT`                              | No          | `3000`                                         | Puerto HTTP                                                               |
+| `MONGODB_URI`                       | Sí          | —                                              | Cadena de conexión a MongoDB                                              |
+| `JWT_ACCESS_SECRET`                 | Sí          | —                                              | Secreto del access token (mínimo 32 caracteres)                           |
+| `JWT_ACCESS_EXPIRES_IN`             | No          | `15m`                                          | Duración del access token (`30s`, `15m`, `12h`, `7d`)                     |
+| `REFRESH_TOKEN_EXPIRES_IN`          | No          | `7d`                                           | Duración del refresh token                                                |
+| `CORS_ORIGINS`                      | No          | vacío                                          | Orígenes permitidos, separados por comas                                  |
+| `TRUST_PROXY_HOPS`                  | No          | `0`                                            | Proxies delante de la API; define de dónde se toma la IP real del cliente |
+| `EXCHANGE_RATE_PROVIDER_URL`        | No          | `https://api.apis.net.pe/v1/tipo-cambio-sunat` | Proveedor externo del tipo de cambio                                      |
+| `EXCHANGE_RATE_REFRESH_INTERVAL_MS` | No          | `30000`                                        | Cada cuántos milisegundos se actualiza el tipo de cambio                  |
 
 ## Pruebas
 

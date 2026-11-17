@@ -44,6 +44,7 @@ export const envSchema = z.object({
   JWT_ACCESS_EXPIRES_IN: tokenLifetime.prefault('15m'),
   REFRESH_TOKEN_EXPIRES_IN: tokenLifetime.prefault('7d'),
   CORS_ORIGINS: commaSeparatedList,
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   EXCHANGE_RATE_PROVIDER_URL: z
     .url()
     .default('https://api.apis.net.pe/v1/tipo-cambio-sunat'),

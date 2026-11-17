@@ -18,6 +18,15 @@ export class InvalidRefreshTokenError extends DomainError {
   }
 }
 
+export class TooManyLoginAttemptsError extends DomainError {
+  readonly code = 'TOO_MANY_LOGIN_ATTEMPTS';
+  readonly kind = 'too_many_requests';
+
+  constructor() {
+    super('Demasiados intentos fallidos. Intenta nuevamente en unos minutos');
+  }
+}
+
 export class InvalidSessionError extends DomainError {
   readonly code = 'INVALID_SESSION';
   readonly kind = 'unauthorized';

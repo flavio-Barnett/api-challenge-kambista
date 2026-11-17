@@ -4,6 +4,7 @@ import { Clock } from '../../shared/domain/clock.port.js';
 import { AppConfig } from '../../shared/infrastructure/config/app-config.js';
 import { SystemClockAdapter } from '../../shared/infrastructure/time/system-clock.adapter.js';
 import { AccessTokenIssuer } from './application/ports/access-token-issuer.port.js';
+import { LoginAttemptsStore } from './application/ports/login-attempts-store.port.js';
 import { PasswordHasher } from './application/ports/password-hasher.port.js';
 import { RefreshTokenGenerator } from './application/ports/refresh-token-generator.port.js';
 import { RefreshTokenStore } from './application/ports/refresh-token-store.port.js';
@@ -14,6 +15,7 @@ import { LogOutUseCase } from './application/use-cases/log-out.use-case.js';
 import { RefreshSessionUseCase } from './application/use-cases/refresh-session.use-case.js';
 import { RegisterUserUseCase } from './application/use-cases/register-user.use-case.js';
 import { UserRepository } from './domain/repositories/user.repository.js';
+import { MongoLoginAttemptsStore } from './infrastructure/persistence/mongo-login-attempts.store.js';
 import { MongoRefreshTokenStore } from './infrastructure/persistence/mongo-refresh-token.store.js';
 import { MongoUserRepository } from './infrastructure/persistence/mongo-user.repository.js';
 import { BcryptPasswordHasherAdapter } from './infrastructure/security/bcrypt-password-hasher.adapter.js';
@@ -43,6 +45,7 @@ const adapters: Provider[] = [
     useClass: OpaqueRefreshTokenGeneratorAdapter,
   },
   { provide: RefreshTokenStore, useClass: MongoRefreshTokenStore },
+  { provide: LoginAttemptsStore, useClass: MongoLoginAttemptsStore },
 ];
 
 const sessionIssuer: FactoryProvider<SessionIssuerService> = {
@@ -76,7 +79,13 @@ const useCases: Provider[] = [
     PasswordHasher,
     SessionIssuerService,
   ]),
-  useCase(LogInUseCase, [UserRepository, PasswordHasher, SessionIssuerService]),
+  useCase(LogInUseCase, [
+    UserRepository,
+    PasswordHasher,
+    SessionIssuerService,
+    LoginAttemptsStore,
+    Clock,
+  ]),
   useCase(RefreshSessionUseCase, [
     UserRepository,
     RefreshTokenGenerator,
