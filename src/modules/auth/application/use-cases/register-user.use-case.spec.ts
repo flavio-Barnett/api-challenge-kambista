@@ -1,6 +1,5 @@
 import { EmailAlreadyRegisteredError } from '../../domain/auth.errors.js';
-import { FakePasswordHasher } from '../../testing/fake-password-hasher.js';
-import { InMemoryUserRepository } from '../../testing/in-memory-user.repository.js';
+import { createAuthTestKit } from '../../testing/auth-test-kit.js';
 import { RegisterUserUseCase } from './register-user.use-case.js';
 
 const command = {
@@ -13,18 +12,26 @@ describe('RegisterUserUseCase', () => {
   let registerUser: RegisterUserUseCase;
 
   beforeEach(() => {
+    const kit = createAuthTestKit();
     registerUser = new RegisterUserUseCase(
-      new InMemoryUserRepository(),
-      new FakePasswordHasher(),
+      kit.users,
+      kit.passwordHasher,
+      kit.sessions,
     );
   });
 
   it('stores the user with a hashed password and the default role', async () => {
-    const user = await registerUser.execute(command);
+    const { user } = await registerUser.execute(command);
 
     expect(user.email.value).toBe('ana@kambista.com');
     expect(user.passwordHash).toBe('hashed:secret-password');
     expect(user.role).toBe('user');
+  });
+
+  it('signs the new user in', async () => {
+    const session = await registerUser.execute(command);
+
+    expect(session.accessToken).toBe(`access-token:${session.user.id}`);
   });
 
   it('rejects an email that is already registered', async () => {

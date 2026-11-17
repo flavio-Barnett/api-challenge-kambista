@@ -8,4 +8,8 @@ export class FakePasswordHasher extends PasswordHasher {
   matches(plainPassword: string, hash: string): Promise<boolean> {
     return Promise.resolve(hash === `hashed:${plainPassword}`);
   }
+
+  simulateMatch(): Promise<void> {
+    return Promise.resolve();
+  }
 }

@@ -13,8 +13,8 @@ describe('envSchema', () => {
     expect(env).toMatchObject({
       NODE_ENV: 'development',
       PORT: 3000,
-      JWT_ACCESS_EXPIRES_IN: '15m',
-      JWT_REFRESH_EXPIRES_IN: '7d',
+      JWT_ACCESS_EXPIRES_IN: 15 * 60 * 1000,
+      JWT_REFRESH_EXPIRES_IN: 7 * 24 * 60 * 60 * 1000,
       CORS_ORIGINS: [],
       EXCHANGE_RATE_PROVIDER_URL:
         'https://api.apis.net.pe/v1/tipo-cambio-sunat',
@@ -70,5 +70,19 @@ describe('envSchema', () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it.each([
+    ['30s', 30 * 1000],
+    ['15m', 15 * 60 * 1000],
+    ['12h', 12 * 60 * 60 * 1000],
+    ['7d', 7 * 24 * 60 * 60 * 1000],
+  ])('converts the token lifetime %s to milliseconds', (lifetime, expected) => {
+    const env = envSchema.parse({
+      ...validEnv,
+      JWT_ACCESS_EXPIRES_IN: lifetime,
+    });
+
+    expect(env.JWT_ACCESS_EXPIRES_IN).toBe(expected);
   });
 });
