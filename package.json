@@ -25,7 +25,8 @@
     "lint:fix": "eslint . --fix",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "user:promote": "node dist/modules/auth/infrastructure/cli/promote-user.cli.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

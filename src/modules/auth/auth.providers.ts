@@ -12,6 +12,7 @@ import { SessionIssuerService } from './application/services/session-issuer.serv
 import { GetCurrentUserUseCase } from './application/use-cases/get-current-user.use-case.js';
 import { LogInUseCase } from './application/use-cases/log-in.use-case.js';
 import { LogOutUseCase } from './application/use-cases/log-out.use-case.js';
+import { PromoteUserToAdminUseCase } from './application/use-cases/promote-user-to-admin.use-case.js';
 import { RefreshSessionUseCase } from './application/use-cases/refresh-session.use-case.js';
 import { RegisterUserUseCase } from './application/use-cases/register-user.use-case.js';
 import { UserRepository } from './domain/repositories/user.repository.js';
@@ -95,6 +96,7 @@ const useCases: Provider[] = [
   ]),
   useCase(LogOutUseCase, [RefreshTokenGenerator, RefreshTokenStore, Clock]),
   useCase(GetCurrentUserUseCase, [UserRepository]),
+  useCase(PromoteUserToAdminUseCase, [UserRepository]),
 ];
 
 export const authProviders: Provider[] = [
