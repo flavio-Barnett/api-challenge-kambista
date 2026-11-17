@@ -5,8 +5,14 @@ import globals from 'globals';
 import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
+const testDoublesPattern = {
+  group: ['**/testing/**', '**/testing'],
+  message: 'Test doubles may only be imported from spec files.',
+};
+
 const restrictedCoreImports = {
   patterns: [
+    testDoublesPattern,
     {
       group: ['@nestjs/*', 'mongoose', 'bcrypt', 'jsonwebtoken'],
       message: 'Domain and application layers must stay framework-agnostic.',
@@ -78,13 +84,22 @@ export default defineConfig(
     },
   },
   {
+    files: ['src/**/*.ts'],
+    ignores: ['src/**/*.spec.ts', 'src/**/testing/**'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [testDoublesPattern] }],
+    },
+  },
+  {
     files: ['src/**/domain/**/*.ts', 'src/**/application/**/*.ts'],
+    ignores: ['src/**/*.spec.ts'],
     rules: {
       'no-restricted-imports': ['error', restrictedCoreImports],
     },
   },
   {
     files: ['src/**/domain/**/*.ts'],
+    ignores: ['src/**/*.spec.ts'],
     rules: {
       'no-restricted-imports': ['error', restrictedDomainImports],
     },
