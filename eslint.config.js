@@ -60,6 +60,8 @@ export default defineConfig(
         'error',
         { allowWithDecorator: true },
       ],
+      // NestJS types many option objects as classes, so literals are the idiomatic input.
+      '@typescript-eslint/no-unsafe-class-instance-assignment': 'off',
       'no-console': 'error',
       eqeqeq: ['error', 'always'],
       complexity: ['error', 8],
