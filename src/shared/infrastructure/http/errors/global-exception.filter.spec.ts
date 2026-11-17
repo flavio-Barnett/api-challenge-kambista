@@ -106,15 +106,21 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it.each([
-    [new NotFoundException('Cannot GET /missing'), 404, 'NOT_FOUND'],
+    [
+      new NotFoundException('Cannot GET /missing'),
+      404,
+      'NOT_FOUND',
+      'El recurso solicitado no existe',
+    ],
     [
       new ServiceUnavailableException('Service Unavailable Exception'),
       503,
       'SERVICE_UNAVAILABLE',
+      'El servicio no está disponible temporalmente',
     ],
   ])(
     'maps framework http exceptions by status',
-    (exception, expectedStatus, expectedCode) => {
+    (exception, expectedStatus, expectedCode, expectedMessage) => {
       const { host, status, json } = createHost();
 
       filter.catch(exception, host);
@@ -122,7 +128,7 @@ describe('GlobalExceptionFilter', () => {
       expect(status).toHaveBeenCalledWith(expectedStatus);
       expect(json).toHaveBeenCalledWith({
         success: false,
-        error: { code: expectedCode, message: exception.message },
+        error: { code: expectedCode, message: expectedMessage },
       });
     },
   );
@@ -138,7 +144,7 @@ describe('GlobalExceptionFilter', () => {
       success: false,
       error: {
         code: 'INTERNAL_ERROR',
-        message: 'An unexpected error occurred',
+        message: 'Ocurrió un error inesperado',
       },
     });
     expect(logError).toHaveBeenCalledWith(

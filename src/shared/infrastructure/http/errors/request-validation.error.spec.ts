@@ -30,4 +30,16 @@ describe('RequestValidationError', () => {
       'email must be an email; name should not be empty',
     );
   });
+
+  it('describes unknown properties in spanish', () => {
+    const error = new RequestValidationError([
+      {
+        property: 'rol',
+        constraints: { whitelistValidation: 'property rol should not exist' },
+        children: [],
+      },
+    ]);
+
+    expect(error.message).toBe('El campo rol no está permitido');
+  });
 });

@@ -12,6 +12,7 @@ export const httpProviders: Provider[] = [
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      stopAtFirstError: true,
       exceptionFactory: (errors) => new RequestValidationError(errors),
     }),
   },
