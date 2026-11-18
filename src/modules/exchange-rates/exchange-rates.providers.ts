@@ -10,6 +10,7 @@ import { ExchangeRateRepository } from './domain/repositories/exchange-rate.repo
 import { InMemoryExchangeRateCacheAdapter } from './infrastructure/cache/in-memory-exchange-rate-cache.adapter.js';
 import { MongoExchangeRateRepository } from './infrastructure/persistence/mongo-exchange-rate.repository.js';
 import { SunatExchangeRateProviderAdapter } from './infrastructure/provider/sunat-exchange-rate-provider.adapter.js';
+import { ExchangeRatePoller } from './infrastructure/scheduling/exchange-rate.poller.js';
 
 const adapters: Provider[] = [
   { provide: ExchangeRateRepository, useClass: MongoExchangeRateRepository },
@@ -30,4 +31,8 @@ const useCases: Provider[] = [
   ]),
 ];
 
-export const exchangeRatesProviders: Provider[] = [...adapters, ...useCases];
+export const exchangeRatesProviders: Provider[] = [
+  ...adapters,
+  ...useCases,
+  ExchangeRatePoller,
+];
