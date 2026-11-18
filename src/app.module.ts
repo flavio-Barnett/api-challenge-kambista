@@ -6,10 +6,12 @@ import { DatabaseModule } from './shared/infrastructure/database/database.module
 import { HealthModule } from './shared/infrastructure/health/health.module.js';
 import { httpProviders } from './shared/infrastructure/http/http.providers.js';
 import { LoggingModule } from './shared/infrastructure/logging/logging.module.js';
+import { TimeModule } from './shared/infrastructure/time/time.module.js';
 
 @Module({
   imports: [
     AppConfigModule,
+    TimeModule,
     LoggingModule,
     DatabaseModule,
     HealthModule,
