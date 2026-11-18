@@ -1,4 +1,4 @@
-import type { Role } from '../../domain/value-objects/role.vo.js';
+import type { Role } from '../../domain/types/role.type.js';
 
 export interface AccessTokenPayload {
   readonly sub: string;

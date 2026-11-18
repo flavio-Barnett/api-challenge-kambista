@@ -2,7 +2,7 @@ import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 
-import type { Role } from '../../../domain/value-objects/role.vo.js';
+import type { Role } from '../../../domain/types/role.type.js';
 import { accessTokenJwtOptions } from '../../security/jwt-options.js';
 import type { AuthenticatedRequest } from './authenticated-user.type.js';
 import {

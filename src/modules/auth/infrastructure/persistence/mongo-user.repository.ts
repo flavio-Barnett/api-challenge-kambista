@@ -3,10 +3,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, type Model, mongo } from 'mongoose';
 
 import { EmailAlreadyRegisteredError } from '../../domain/auth.errors.js';
-import { type NewUser, User } from '../../domain/entities/user.entity.js';
+import type { NewUser, User } from '../../domain/entities/user.entity.js';
 import { UserRepository } from '../../domain/repositories/user.repository.js';
-import { Email } from '../../domain/value-objects/email.vo.js';
-import type { Role } from '../../domain/value-objects/role.vo.js';
+import type { Role } from '../../domain/types/role.type.js';
+import type { Email } from '../../domain/value-objects/email.vo.js';
+import { toUser, toUserDocument } from './user.mapper.js';
 import { USER_MODEL, type UserRecord } from './user.schema.js';
 
 const DUPLICATE_KEY_ERROR_CODE = 11000;
@@ -16,16 +17,6 @@ function isDuplicateKeyError(error: unknown): boolean {
     error instanceof mongo.MongoServerError &&
     error.code === DUPLICATE_KEY_ERROR_CODE
   );
-}
-
-function toDomain(record: UserRecord): User {
-  return User.restore({
-    id: record._id.toHexString(),
-    name: record.name,
-    email: Email.create(record.email),
-    passwordHash: record.passwordHash,
-    role: record.role,
-  });
 }
 
 @Injectable()
@@ -38,13 +29,8 @@ export class MongoUserRepository extends UserRepository {
 
   async create(user: NewUser): Promise<User> {
     try {
-      const created = await this.users.create({
-        name: user.name,
-        email: user.email.value,
-        passwordHash: user.passwordHash,
-        role: user.role,
-      });
-      return toDomain(created.toObject());
+      const created = await this.users.create(toUserDocument(user));
+      return toUser(created.toObject());
     } catch (error) {
       if (isDuplicateKeyError(error)) {
         throw new EmailAlreadyRegisteredError();
@@ -59,7 +45,7 @@ export class MongoUserRepository extends UserRepository {
       .select('+passwordHash')
       .lean<UserRecord>()
       .exec();
-    return record ? toDomain(record) : null;
+    return record ? toUser(record) : null;
   }
 
   async findById(id: string): Promise<User | null> {
@@ -67,7 +53,7 @@ export class MongoUserRepository extends UserRepository {
       return null;
     }
     const record = await this.users.findById(id).lean<UserRecord>().exec();
-    return record ? toDomain(record) : null;
+    return record ? toUser(record) : null;
   }
 
   async changeRole(id: string, role: Role): Promise<void> {

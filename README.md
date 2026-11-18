@@ -105,7 +105,8 @@ src/
     └── auth/
         ├── domain/              # Reglas del negocio
         │   ├── entities/        # User
-        │   ├── value-objects/   # Email, Role
+        │   ├── value-objects/   # Email
+        │   ├── types/           # Role
         │   └── repositories/    # Contrato UserRepository
         ├── application/         # Qué hace el sistema
         │   ├── use-cases/       # Un caso de uso por operación

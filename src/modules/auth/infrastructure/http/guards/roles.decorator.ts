@@ -1,6 +1,6 @@
 import { type CustomDecorator, SetMetadata } from '@nestjs/common';
 
-import type { Role } from '../../../domain/value-objects/role.vo.js';
+import type { Role } from '../../../domain/types/role.type.js';
 
 export const ROLES_KEY = 'roles';
 

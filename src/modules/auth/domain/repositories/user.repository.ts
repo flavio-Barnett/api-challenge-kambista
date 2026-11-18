@@ -1,6 +1,6 @@
 import type { NewUser, User } from '../entities/user.entity.js';
+import type { Role } from '../types/role.type.js';
 import type { Email } from '../value-objects/email.vo.js';
-import type { Role } from '../value-objects/role.vo.js';
 
 export abstract class UserRepository {
   abstract create(user: NewUser): Promise<User>;
