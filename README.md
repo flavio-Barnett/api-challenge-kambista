@@ -43,6 +43,18 @@ Con la API en marcha:
 - Documentación interactiva (Swagger): http://localhost:3000/docs
 - Health check: http://localhost:3000/health
 
+## Probar la API
+
+Con la API en marcha, abre Swagger en http://localhost:3000/docs:
+
+1. `POST /v1/auth/register` crea un usuario y devuelve un `access_token`.
+2. Presiona **Authorize** y pega solo el token, sin la palabra `Bearer`.
+3. `GET /v1/exchange-rates/current` muestra el tipo de cambio vigente.
+4. `POST /v1/transactions` con `{ "monedaOrigen": "USD", "monedaDestino": "PEN", "monto": 100 }` registra un cambio.
+5. `GET /v1/transactions/history?startDate=2026-11-01&endDate=2026-11-30&page=1&limit=20` lista el historial. Las fechas van en formato `YYYY-MM-DD`, en hora de Lima, y `endDate` se incluye completo. El total sin paginar viene en el header `X-Total-Count`.
+
+Para probar como admin, promueve un usuario (ver [Crear un administrador](#crear-un-administrador)) y consulta el historial de otro usuario agregando `userId`.
+
 ## Variables de entorno
 
 Se validan con Zod al iniciar: si falta alguna obligatoria o tiene un formato inválido, la aplicación no arranca e indica cuál es el problema. Los valores de ejemplo están en `.env.example`.
@@ -65,7 +77,10 @@ Se validan con Zod al iniciar: si falta alguna obligatoria o tiene un formato in
 ```bash
 npm test            # pruebas unitarias
 npm run test:cov    # pruebas unitarias con reporte de cobertura
+npm run test:e2e    # pruebas e2e de la API completa
 ```
+
+Las pruebas e2e levantan la API contra un MongoDB en memoria y reemplazan a SUNAT por un proveedor simulado, así que no necesitan Docker. La primera ejecución descarga el binario de MongoDB.
 
 ## Autenticación
 
@@ -89,6 +104,8 @@ npm run user:promote -- ana@kambista.com
 ```
 
 Con Docker: `docker compose exec api npm run user:promote -- ana@kambista.com`.
+
+Después de promoverlo, el usuario debe volver a iniciar sesión: el rol viaja dentro del token, así que el token anterior sigue teniendo el rol `user`.
 
 ## Tipo de cambio
 
