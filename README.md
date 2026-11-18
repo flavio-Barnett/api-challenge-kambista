@@ -109,14 +109,13 @@ src/
 ├── main.ts
 ├── app.module.ts
 ├── shared/                      # Piezas transversales sin reglas de negocio
-│   ├── domain/                  # DomainError y puerto Clock
-│   └── infrastructure/          # Configuración, base de datos, logs, HTTP y health check
+│   ├── domain/                  # DomainError, puerto Clock y Role
+│   └── infrastructure/          # Configuración, base de datos, logs, HTTP (usuario autenticado) y health check
 └── modules/
     ├── auth/
     │   ├── domain/              # Reglas del negocio
     │   │   ├── entities/        # User
     │   │   ├── value-objects/   # Email
-    │   │   ├── types/           # Role
     │   │   └── repositories/    # Contrato UserRepository
     │   ├── application/         # Qué hace el sistema
     │   │   ├── use-cases/       # Un caso de uso por operación

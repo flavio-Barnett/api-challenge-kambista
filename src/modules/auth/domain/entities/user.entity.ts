@@ -1,5 +1,8 @@
+import {
+  DEFAULT_ROLE,
+  type Role,
+} from '../../../../shared/domain/role.type.js';
 import { InvalidUserNameError } from '../auth.errors.js';
-import { DEFAULT_ROLE, type Role } from '../types/role.type.js';
 import type { Email } from '../value-objects/email.vo.js';
 
 export interface UserProps {

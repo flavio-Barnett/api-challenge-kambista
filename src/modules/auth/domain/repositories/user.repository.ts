@@ -1,5 +1,5 @@
+import type { Role } from '../../../../shared/domain/role.type.js';
 import type { NewUser, User } from '../entities/user.entity.js';
-import type { Role } from '../types/role.type.js';
 import type { Email } from '../value-objects/email.vo.js';
 
 export abstract class UserRepository {

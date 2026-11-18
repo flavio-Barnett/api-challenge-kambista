@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
+import type { AuthenticatedUser } from '../../../../shared/infrastructure/http/authenticated-user.type.js';
+import { CurrentUser } from '../../../../shared/infrastructure/http/current-user.decorator.js';
 import { Public } from '../../../../shared/infrastructure/http/public.decorator.js';
 import { GetCurrentUserUseCase } from '../../application/use-cases/get-current-user.use-case.js';
 import { LogInUseCase } from '../../application/use-cases/log-in.use-case.js';
@@ -27,8 +29,6 @@ import { LogInDto } from './dto/log-in.dto.js';
 import { RefreshTokenDto } from './dto/refresh-token.dto.js';
 import { RegisterUserDto } from './dto/register-user.dto.js';
 import { UsuarioDto } from './dto/usuario.dto.js';
-import type { AuthenticatedUser } from './guards/authenticated-user.type.js';
-import { CurrentUser } from './guards/current-user.decorator.js';
 
 @ApiTags('auth')
 @Controller('auth')

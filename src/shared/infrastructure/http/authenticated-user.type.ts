@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 
-import type { RequestUser } from '../../../../../shared/infrastructure/http/request-user.js';
-import type { Role } from '../../../domain/types/role.type.js';
+import type { Role } from '../../domain/role.type.js';
+import type { RequestUser } from './request-user.js';
 
 export interface AuthenticatedUser extends RequestUser {
   readonly role: Role;

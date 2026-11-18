@@ -1,4 +1,4 @@
-import type { Role } from '../../domain/types/role.type.js';
+import type { Role } from '../../../../shared/domain/role.type.js';
 
 export interface AccessTokenPayload {
   readonly sub: string;
