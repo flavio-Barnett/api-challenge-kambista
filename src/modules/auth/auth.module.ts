@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { AppConfig } from '../../shared/infrastructure/config/app-config.js';
+import { CheckUserExistsUseCase } from './application/use-cases/check-user-exists.use-case.js';
 import { authProviders } from './auth.providers.js';
 import { AuthController } from './infrastructure/http/auth.controller.js';
 import { JwtAuthGuard } from './infrastructure/http/guards/jwt-auth.guard.js';
@@ -44,5 +45,6 @@ import { accessTokenJwtOptions } from './infrastructure/security/jwt-options.js'
     { provide: APP_GUARD, useClass: RolesGuard },
     ...authProviders,
   ],
+  exports: [CheckUserExistsUseCase],
 })
 export class AuthModule {}

@@ -6,10 +6,10 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 
+import type { AuthenticatedRequest } from '../../../../../shared/infrastructure/http/authenticated-user.type.js';
+import { InvalidAccessTokenError } from '../../../../../shared/infrastructure/http/errors/invalid-access-token.error.js';
 import { IS_PUBLIC_KEY } from '../../../../../shared/infrastructure/http/public.decorator.js';
 import type { AccessTokenPayload } from '../../security/access-token-payload.type.js';
-import type { AuthenticatedRequest } from './authenticated-user.type.js';
-import { InvalidAccessTokenError } from './guard.errors.js';
 
 const BEARER_PREFIX = 'Bearer ';
 

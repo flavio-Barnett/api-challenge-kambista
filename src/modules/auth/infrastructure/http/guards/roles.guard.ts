@@ -5,8 +5,8 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
-import type { Role } from '../../../domain/types/role.type.js';
-import type { AuthenticatedRequest } from './authenticated-user.type.js';
+import type { Role } from '../../../../../shared/domain/role.type.js';
+import type { AuthenticatedRequest } from '../../../../../shared/infrastructure/http/authenticated-user.type.js';
 import { InsufficientRoleError } from './guard.errors.js';
 import { ROLES_KEY } from './roles.decorator.js';
 

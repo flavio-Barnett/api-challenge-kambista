@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, type Model, mongo } from 'mongoose';
 
+import type { Role } from '../../../../shared/domain/role.type.js';
 import { EmailAlreadyRegisteredError } from '../../domain/auth.errors.js';
 import type { NewUser, User } from '../../domain/entities/user.entity.js';
 import { UserRepository } from '../../domain/repositories/user.repository.js';
-import type { Role } from '../../domain/types/role.type.js';
 import type { Email } from '../../domain/value-objects/email.vo.js';
 import { toUser, toUserDocument } from './user.mapper.js';
 import { USER_MODEL, type UserRecord } from './user.schema.js';

@@ -2,13 +2,11 @@ import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 
-import type { Role } from '../../../domain/types/role.type.js';
+import type { Role } from '../../../../../shared/domain/role.type.js';
+import type { AuthenticatedRequest } from '../../../../../shared/infrastructure/http/authenticated-user.type.js';
+import { InvalidAccessTokenError } from '../../../../../shared/infrastructure/http/errors/invalid-access-token.error.js';
 import { accessTokenJwtOptions } from '../../security/jwt-options.js';
-import type { AuthenticatedRequest } from './authenticated-user.type.js';
-import {
-  InsufficientRoleError,
-  InvalidAccessTokenError,
-} from './guard.errors.js';
+import { InsufficientRoleError } from './guard.errors.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { RolesGuard } from './roles.guard.js';
 

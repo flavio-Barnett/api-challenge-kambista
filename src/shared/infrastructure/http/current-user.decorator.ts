@@ -4,7 +4,7 @@ import type {
   AuthenticatedRequest,
   AuthenticatedUser,
 } from './authenticated-user.type.js';
-import { InvalidAccessTokenError } from './guard.errors.js';
+import { InvalidAccessTokenError } from './errors/invalid-access-token.error.js';
 
 export const CurrentUser = createParamDecorator(
   (_data: unknown, context: ExecutionContext): AuthenticatedUser => {

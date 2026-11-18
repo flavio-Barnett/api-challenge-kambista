@@ -11,6 +11,9 @@ export function configureApp(
   app.set('trust proxy', config.trustProxyHops);
   app.use(helmet());
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
-  app.enableCors({ origin: [...config.corsOrigins] });
+  app.enableCors({
+    origin: [...config.corsOrigins],
+    exposedHeaders: ['X-Total-Count'],
+  });
   app.enableShutdownHooks();
 }

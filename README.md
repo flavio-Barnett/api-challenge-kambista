@@ -100,6 +100,18 @@ La API consulta el tipo de cambio oficial de SUNAT al arrancar y luego cada `EXC
 
 Si todavía no se obtuvo ninguna tasa, responde 503 `EXCHANGE_RATE_NOT_AVAILABLE`.
 
+## Transacciones
+
+| Método | Ruta                       | Acceso | Descripción                                                      |
+| ------ | -------------------------- | ------ | ---------------------------------------------------------------- |
+| POST   | `/v1/transactions`         | Token  | Registra un cambio entre USD y PEN con el tipo de cambio vigente |
+| GET    | `/v1/transactions/history` | Token  | Historial en un rango de fechas, del más reciente al más antiguo |
+
+- **Cálculo:** USD → PEN multiplica por la venta y PEN → USD divide entre la compra. El resultado se redondea a 2 decimales hacia arriba desde el 5 (`ROUND_HALF_UP`).
+- **Fechas:** `startDate` y `endDate` (`YYYY-MM-DD`) se interpretan en hora de Lima e incluyen ambos días completos.
+- **Paginación:** `page` y `limit` (por defecto 20, máximo 100); el total va en el header `X-Total-Count`.
+- **`userId`:** solo lo usa un `admin` para ver el historial de otro usuario (404 `USER_NOT_FOUND` si no existe). Un usuario con rol `user` siempre ve solo el suyo.
+
 ## Arquitectura
 
 Clean Architecture implementada con puertos y adaptadores (hexagonal), organizada por módulos de dominio (DDD). Las capas `domain` y `application` son TypeScript puro: no importan NestJS, Mongoose ni otras librerías de infraestructura, y ESLint lo verifica.
@@ -109,14 +121,13 @@ src/
 ├── main.ts
 ├── app.module.ts
 ├── shared/                      # Piezas transversales sin reglas de negocio
-│   ├── domain/                  # DomainError y puerto Clock
-│   └── infrastructure/          # Configuración, base de datos, logs, HTTP y health check
+│   ├── domain/                  # DomainError, puerto Clock y Role
+│   └── infrastructure/          # Configuración, base de datos, logs, HTTP (usuario autenticado) y health check
 └── modules/
     ├── auth/
     │   ├── domain/              # Reglas del negocio
     │   │   ├── entities/        # User
     │   │   ├── value-objects/   # Email
-    │   │   ├── types/           # Role
     │   │   └── repositories/    # Contrato UserRepository
     │   ├── application/         # Qué hace el sistema
     │   │   ├── use-cases/       # Un caso de uso por operación
@@ -127,8 +138,14 @@ src/
     │       ├── persistence/     # Esquemas y adaptadores de MongoDB
     │       ├── security/        # bcrypt, JWT y refresh tokens
     │       └── cli/             # Scripts de administración
-    └── exchange-rates/          # Tipo de cambio, con la misma estructura
+    ├── exchange-rates/          # Tipo de cambio, con la misma estructura
+    └── transactions/            # Operaciones de cambio e historial
+        ├── domain/              # Transaction, ExchangeAmount, CurrencyPair, DateRange y CurrencyConverter
+        ├── application/         # Casos de uso y puertos hacia otros módulos (tasa vigente, usuarios)
+        └── infrastructure/      # HTTP, MongoDB e integraciones con exchange-rates y auth
 ```
+
+**Comunicación entre módulos:** un módulo nunca importa el dominio de otro. `transactions` define sus propios puertos (`CurrentRateReader`, `UserLookup`) y sus adaptadores de infraestructura llaman a los casos de uso que exportan `exchange-rates` (`GetCurrentExchangeRateUseCase`) y `auth` (`CheckUserExistsUseCase`).
 
 **Convención de nombres:** el sufijo del archivo indica su rol (`user.entity.ts`, `log-in.use-case.ts`, `password-hasher.port.ts`, `bcrypt-password-hasher.adapter.ts`). Las clases técnicas llevan ese rol en su nombre (`LogInUseCase`, `BcryptPasswordHasherAdapter`); el modelo de dominio y los puertos usan nombres del negocio (`User`, `Email`, `PasswordHasher`), y los adaptadores llevan como prefijo la tecnología que usan (`mongo`, `bcrypt`, `jwt`).
 
@@ -144,6 +161,8 @@ src/
 - **Tipo de cambio con precisión exacta:** compra y venta se manejan con `decimal.js` en el código y se guardan como `Decimal128` en MongoDB, para no perder céntimos por redondeos de punto flotante.
 - **Polling resiliente:** SUNAT publica un valor por día; la consulta cada 30 segundos detecta el cambio apenas se publica. Si el proveedor falla, tarda más de 3 segundos o responde datos inválidos, se registra una advertencia y se sigue usando la última tasa guardada. Dos consultas nunca se ejecutan a la vez.
 - **Versionado de tasas:** solo se inserta un registro cuando cambia la compra o la venta, con su `validFrom`; si no cambia, se actualiza `lastCheckedAt`. Así cada transacción puede asociarse a la tasa que estaba vigente.
+- **Transacciones auditables:** los montos se guardan como `Decimal128` y cada transacción guarda la tasa aplicada y el id de su versión.
+- **Fechas en hora de Lima:** el negocio opera en Perú (UTC-5, sin horario de verano), así que el rango se convierte a UTC antes de consultar; `fecha` se responde en UTC.
 - **Caché en memoria:** la tasa vigente se lee de memoria y MongoDB es el respaldo, de modo que consultar la tasa no toca la base en cada operación.
 
 ### Riesgos conocidos
@@ -153,18 +172,20 @@ src/
 - **Solo el login tiene límite de peticiones:** un límite global contra abuso corresponde al API gateway o al balanceador.
 - **Swagger es público:** `/docs` queda abierto para facilitar la evaluación; en un entorno productivo se restringiría.
 - **Tasa antigua:** si el proveedor deja de responder, se sigue operando con la última tasa conocida; `lastCheckedAt` permite detectarlo. Bloquear operaciones con una tasa demasiado antigua queda como mejora posible.
+- **Sin clave de idempotencia:** reintentar un `POST /v1/transactions` crea una transacción duplicada; se resolvería con un header `Idempotency-Key`.
 - **Varias réplicas:** cada instancia consulta al proveedor por su cuenta y, si cambia la tasa al mismo tiempo, podrían guardarse versiones duplicadas. Se resolvería con un lock distribuido o con un proceso dedicado a la actualización.
 
 ### Índices de MongoDB
 
 Cada índice responde a una consulta concreta:
 
-| Colección        | Índice                   | Consulta que lo justifica                                |
-| ---------------- | ------------------------ | -------------------------------------------------------- |
-| `users`          | `{ email: 1 }` único     | Login por email y garantía de email único                |
-| `refresh_tokens` | `{ tokenHash: 1 }` único | Refresh y logout buscan el token por su hash             |
-| `refresh_tokens` | `{ userId: 1 }`          | Revocar todas las sesiones de un usuario ante un reuso   |
-| `refresh_tokens` | `{ expiresAt: 1 }` TTL   | MongoDB elimina los tokens vencidos automáticamente      |
-| `login_attempts` | `{ key: 1 }` único       | Consultar y actualizar los fallos de un email e IP       |
-| `login_attempts` | `{ expiresAt: 1 }` TTL   | La ventana de 15 minutos se limpia sola                  |
-| `exchange_rates` | `{ validFrom: -1 }`      | Obtener la tasa vigente (la de `validFrom` más reciente) |
+| Colección        | Índice                                  | Consulta que lo justifica                                |
+| ---------------- | --------------------------------------- | -------------------------------------------------------- |
+| `users`          | `{ email: 1 }` único                    | Login por email y garantía de email único                |
+| `refresh_tokens` | `{ tokenHash: 1 }` único                | Refresh y logout buscan el token por su hash             |
+| `refresh_tokens` | `{ userId: 1 }`                         | Revocar todas las sesiones de un usuario ante un reuso   |
+| `refresh_tokens` | `{ expiresAt: 1 }` TTL                  | MongoDB elimina los tokens vencidos automáticamente      |
+| `login_attempts` | `{ key: 1 }` único                      | Consultar y actualizar los fallos de un email e IP       |
+| `login_attempts` | `{ expiresAt: 1 }` TTL                  | La ventana de 15 minutos se limpia sola                  |
+| `exchange_rates` | `{ validFrom: -1 }`                     | Obtener la tasa vigente (la de `validFrom` más reciente) |
+| `transactions`   | `{ userId: 1, createdAt: -1, _id: -1 }` | Historial por usuario, del más reciente al más antiguo   |

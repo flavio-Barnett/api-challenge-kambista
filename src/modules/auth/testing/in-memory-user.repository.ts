@@ -1,7 +1,7 @@
+import type { Role } from '../../../shared/domain/role.type.js';
 import { EmailAlreadyRegisteredError } from '../domain/auth.errors.js';
 import { type NewUser, User } from '../domain/entities/user.entity.js';
 import { UserRepository } from '../domain/repositories/user.repository.js';
-import type { Role } from '../domain/types/role.type.js';
 import type { Email } from '../domain/value-objects/email.vo.js';
 
 export class InMemoryUserRepository extends UserRepository {

@@ -1,5 +1,5 @@
+import type { Role } from '../../../../../shared/domain/role.type.js';
 import type { User } from '../../../domain/entities/user.entity.js';
-import type { Role } from '../../../domain/types/role.type.js';
 
 export class UsuarioDto {
   id: string;
