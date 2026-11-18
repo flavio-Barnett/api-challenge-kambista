@@ -2,7 +2,7 @@ import type { FactoryProvider, Provider } from '@nestjs/common';
 
 import { Clock } from '../../shared/domain/clock.port.js';
 import { AppConfig } from '../../shared/infrastructure/config/app-config.js';
-import { SystemClockAdapter } from '../../shared/infrastructure/time/system-clock.adapter.js';
+import { useCase } from '../../shared/infrastructure/di/use-case.provider.js';
 import { AccessTokenIssuer } from './application/ports/access-token-issuer.port.js';
 import { LoginAttemptsStore } from './application/ports/login-attempts-store.port.js';
 import { PasswordHasher } from './application/ports/password-hasher.port.js';
@@ -23,21 +23,7 @@ import { BcryptPasswordHasherAdapter } from './infrastructure/security/bcrypt-pa
 import { JwtAccessTokenIssuerAdapter } from './infrastructure/security/jwt-access-token-issuer.adapter.js';
 import { OpaqueRefreshTokenGeneratorAdapter } from './infrastructure/security/opaque-refresh-token-generator.adapter.js';
 
-type Token<T> = abstract new (...args: never) => T;
-
-function useCase<T, Deps extends unknown[]>(
-  useCaseClass: new (...deps: Deps) => T,
-  dependencies: { [K in keyof Deps]: Token<Deps[K]> },
-): FactoryProvider<T> {
-  return {
-    provide: useCaseClass,
-    inject: [...dependencies],
-    useFactory: (...deps: Deps) => new useCaseClass(...deps),
-  };
-}
-
 const adapters: Provider[] = [
-  { provide: Clock, useClass: SystemClockAdapter },
   { provide: UserRepository, useClass: MongoUserRepository },
   { provide: PasswordHasher, useClass: BcryptPasswordHasherAdapter },
   { provide: AccessTokenIssuer, useClass: JwtAccessTokenIssuerAdapter },

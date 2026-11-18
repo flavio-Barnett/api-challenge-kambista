@@ -4,7 +4,7 @@ import {
   DEFAULT_ROLE,
   type Role,
   ROLES,
-} from '../../domain/value-objects/role.vo.js';
+} from '../../domain/types/role.type.js';
 
 export const USER_MODEL = 'User';
 

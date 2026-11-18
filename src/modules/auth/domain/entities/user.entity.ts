@@ -1,6 +1,6 @@
 import { InvalidUserNameError } from '../auth.errors.js';
+import { DEFAULT_ROLE, type Role } from '../types/role.type.js';
 import type { Email } from '../value-objects/email.vo.js';
-import { DEFAULT_ROLE, type Role } from '../value-objects/role.vo.js';
 
 export interface UserProps {
   readonly id: string;

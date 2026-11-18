@@ -1,8 +1,8 @@
 import { EmailAlreadyRegisteredError } from '../domain/auth.errors.js';
 import { type NewUser, User } from '../domain/entities/user.entity.js';
 import { UserRepository } from '../domain/repositories/user.repository.js';
+import type { Role } from '../domain/types/role.type.js';
 import type { Email } from '../domain/value-objects/email.vo.js';
-import type { Role } from '../domain/value-objects/role.vo.js';
 
 export class InMemoryUserRepository extends UserRepository {
   private users: User[] = [];

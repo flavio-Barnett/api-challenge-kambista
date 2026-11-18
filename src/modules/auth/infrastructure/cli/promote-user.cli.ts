@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 
-import { AppModule } from '../../../../app.module.js';
 import { PromoteUserToAdminUseCase } from '../../application/use-cases/promote-user-to-admin.use-case.js';
+import { PromoteUserCliModule } from './promote-user-cli.module.js';
 
 function fail(message: string): void {
   process.stderr.write(`${message}\n`);
@@ -13,7 +13,7 @@ async function promote(email: string | undefined): Promise<void> {
     fail('Uso: npm run user:promote -- <email>');
     return;
   }
-  const app = await NestFactory.createApplicationContext(AppModule, {
+  const app = await NestFactory.createApplicationContext(PromoteUserCliModule, {
     logger: false,
   });
   try {

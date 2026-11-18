@@ -1,8 +1,8 @@
+import { FixedClock } from '../../../shared/testing/fixed-clock.js';
 import { SessionIssuerService } from '../application/services/session-issuer.service.js';
 import { FakeAccessTokenIssuer } from './fake-access-token-issuer.js';
 import { FakePasswordHasher } from './fake-password-hasher.js';
 import { FakeRefreshTokenGenerator } from './fake-refresh-token-generator.js';
-import { FixedClock } from './fixed-clock.js';
 import { InMemoryLoginAttemptsStore } from './in-memory-login-attempts.store.js';
 import { InMemoryRefreshTokenStore } from './in-memory-refresh-token.store.js';
 import { InMemoryUserRepository } from './in-memory-user.repository.js';

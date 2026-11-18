@@ -1,4 +1,4 @@
-import { Clock } from '../../../shared/domain/clock.port.js';
+import { Clock } from '../domain/clock.port.js';
 
 export class FixedClock extends Clock {
   constructor(private current: Date) {
