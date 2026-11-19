@@ -1,6 +1,10 @@
 import request from 'supertest';
 
-import { startTestApp, type TestApp } from './support/test-app.js';
+import {
+  ALLOWED_ORIGIN,
+  startTestApp,
+  type TestApp,
+} from './support/test-app.js';
 import { bearer, registerUser } from './support/users.js';
 
 const REFRESH_COOKIE = 'refresh_token';
@@ -23,13 +27,21 @@ function cookiePair(cookie: string): string {
 describe('Auth (e2e)', () => {
   let testApp: TestApp;
 
+  async function startSession(email: string): Promise<string> {
+    const response = await request(testApp.server)
+      .post('/v1/auth/register')
+      .send({ nombre: 'Sesión', email, password: 'Secreta123' })
+      .expect(201);
+    return cookiePair(refreshCookie(response));
+  }
+
   function refresh(cookie?: string): request.Test {
     const call = request(testApp.server).post('/v1/auth/refresh');
     return cookie === undefined ? call : call.set('Cookie', cookie);
   }
 
   beforeAll(async () => {
-    testApp = await startTestApp();
+    testApp = await startTestApp({ trustProxyHops: 1 });
   });
 
   afterAll(async () => {
@@ -77,6 +89,25 @@ describe('Auth (e2e)', () => {
     expect(response.body).toMatchObject({
       usuario: { email: 'login@test.com', rol: 'user' },
     });
+    expect(refreshCookie(response)).toContain('HttpOnly');
+  });
+
+  it('sets the refresh token in a restricted httponly cookie', async () => {
+    const response = await request(testApp.server)
+      .post('/v1/auth/register')
+      .send({
+        nombre: 'Cookie',
+        email: 'cookie@test.com',
+        password: 'Secreta123',
+      })
+      .expect(201);
+
+    const cookie = refreshCookie(response);
+    expect(cookie).toContain('HttpOnly');
+    expect(cookie).toContain('SameSite=Strict');
+    expect(cookie).toContain('Path=/v1/auth');
+    expect(cookie).toContain(`Max-Age=${String(7 * 24 * 60 * 60)}`);
+    expect(response.body).not.toHaveProperty('refresh_token');
   });
 
   it('returns the authenticated user', async () => {
@@ -159,6 +190,64 @@ describe('Auth (e2e)', () => {
     expect(refreshCookie(response)).toMatch(/Expires=Thu, 01 Jan 1970/);
     await browser.post('/v1/auth/refresh').expect(401);
     await refresh(cookie).expect(401);
+  });
+
+  it('logs out without a cookie', async () => {
+    await request(testApp.server).post('/v1/auth/logout').expect(204);
+  });
+
+  it('rejects a refresh without the cookie', async () => {
+    const response = await refresh().expect(401);
+
+    expect(response.body).toMatchObject({
+      error: { code: 'INVALID_REFRESH_TOKEN' },
+    });
+  });
+
+  it('rejects a refresh from an origin that is not allowed', async () => {
+    const cookie = await startSession('origin@test.com');
+
+    const response = await refresh(cookie)
+      .set('Origin', 'https://evil.example')
+      .expect(403);
+
+    expect(response.body).toMatchObject({
+      error: { code: 'ORIGIN_NOT_ALLOWED' },
+    });
+  });
+
+  it('rejects a logout from an origin that is not allowed', async () => {
+    const cookie = await startSession('logout-origin@test.com');
+
+    const response = await request(testApp.server)
+      .post('/v1/auth/logout')
+      .set('Cookie', cookie)
+      .set('Origin', 'https://evil.example')
+      .expect(403);
+
+    expect(response.body).toMatchObject({
+      error: { code: 'ORIGIN_NOT_ALLOWED' },
+    });
+  });
+
+  it('accepts the API own origin as seen through a proxy', async () => {
+    const cookie = await startSession('proxy@test.com');
+
+    await refresh(cookie)
+      .set('X-Forwarded-Proto', 'https')
+      .set('X-Forwarded-Host', 'api.kambista.test')
+      .set('Origin', 'https://api.kambista.test')
+      .expect(200);
+  });
+
+  it('allows credentials for the frontend origin', async () => {
+    const cookie = await startSession('cors@test.com');
+
+    const response = await refresh(cookie)
+      .set('Origin', ALLOWED_ORIGIN)
+      .expect(200);
+
+    expect(response.headers['access-control-allow-credentials']).toBe('true');
   });
 
   it('rejects a protected route without a token', async () => {

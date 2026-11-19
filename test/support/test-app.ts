@@ -21,12 +21,17 @@ export interface TestApp {
 
 export const ALLOWED_ORIGIN = 'http://localhost:3001';
 
-function configureEnvironment(mongoUri: string): void {
+interface TestAppOptions {
+  readonly trustProxyHops?: number;
+}
+
+function configureEnvironment(mongoUri: string, options: TestAppOptions): void {
   process.env.NODE_ENV = 'test';
   process.env.MONGODB_URI = mongoUri;
   process.env.JWT_ACCESS_SECRET = 'e2e-secret-with-at-least-32-characters';
   process.env.EXCHANGE_RATE_REFRESH_INTERVAL_MS = String(60 * 60 * 1000);
   process.env.CORS_ORIGINS = ALLOWED_ORIGIN;
+  process.env.TRUST_PROXY_HOPS = String(options.trustProxyHops ?? 0);
 }
 
 async function createApp(
@@ -52,9 +57,11 @@ async function createApp(
   return app;
 }
 
-export async function startTestApp(): Promise<TestApp> {
+export async function startTestApp(
+  options: TestAppOptions = {},
+): Promise<TestApp> {
   const mongo = await MongoMemoryServer.create();
-  configureEnvironment(mongo.getUri('kambista'));
+  configureEnvironment(mongo.getUri('kambista'), options);
   const rates = new FakeExchangeRateProvider();
   rates.willFail(new Error('Exchange rate provider is not ready'));
   const clock = new ControllableClock();
