@@ -9,6 +9,7 @@ import { authProviders } from './auth.providers.js';
 import { AuthController } from './infrastructure/http/auth.controller.js';
 import { JwtAuthGuard } from './infrastructure/http/guards/jwt-auth.guard.js';
 import { RolesGuard } from './infrastructure/http/guards/roles.guard.js';
+import { RefreshTokenCookie } from './infrastructure/http/refresh-token.cookie.js';
 import {
   LOGIN_ATTEMPT_MODEL,
   loginAttemptSchema,
@@ -43,6 +44,7 @@ import { accessTokenJwtOptions } from './infrastructure/security/jwt-options.js'
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    RefreshTokenCookie,
     ...authProviders,
   ],
   exports: [CheckUserExistsUseCase],

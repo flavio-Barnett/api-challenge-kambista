@@ -1,14 +1,20 @@
 import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import type { Request } from 'express';
 
 import type { Role } from '../../../../../shared/domain/role.type.js';
+import type { AppConfig } from '../../../../../shared/infrastructure/config/app-config.js';
 import type { AuthenticatedRequest } from '../../../../../shared/infrastructure/http/authenticated-user.type.js';
 import { InvalidAccessTokenError } from '../../../../../shared/infrastructure/http/errors/invalid-access-token.error.js';
 import { accessTokenJwtOptions } from '../../security/jwt-options.js';
-import { InsufficientRoleError } from './guard.errors.js';
+import {
+  InsufficientRoleError,
+  OriginNotAllowedError,
+} from './guard.errors.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { RolesGuard } from './roles.guard.js';
+import { TrustedOriginGuard } from './trusted-origin.guard.js';
 
 const SECRET = 'a'.repeat(32);
 const TTL_MS = 15 * 60 * 1000;
@@ -110,6 +116,47 @@ describe('RolesGuard', () => {
 
     expect(() => guard.canActivate(contextFor(requestFrom('user')))).toThrow(
       InsufficientRoleError,
+    );
+  });
+});
+
+describe('TrustedOriginGuard', () => {
+  const guard = new TrustedOriginGuard({
+    corsOrigins: ['http://localhost:3001'] as readonly string[],
+  } as AppConfig);
+
+  function requestFrom(origin?: string): Partial<Request> {
+    return {
+      protocol: 'https',
+      host: 'api.kambista.test',
+      headers: origin === undefined ? {} : { origin },
+    };
+  }
+
+  it('allows requests without an Origin header', () => {
+    expect(guard.canActivate(contextFor(requestFrom()))).toBe(true);
+  });
+
+  it('allows an origin listed in CORS_ORIGINS', () => {
+    expect(
+      guard.canActivate(contextFor(requestFrom('http://localhost:3001'))),
+    ).toBe(true);
+  });
+
+  it('allows the API own origin as resolved behind proxies', () => {
+    expect(
+      guard.canActivate(contextFor(requestFrom('https://api.kambista.test'))),
+    ).toBe(true);
+  });
+
+  it.each([
+    'https://evil.example',
+    'http://api.kambista.test',
+    'null',
+    'not a url',
+  ])('forbids the origin %s', (origin) => {
+    expect(() => guard.canActivate(contextFor(requestFrom(origin)))).toThrow(
+      OriginNotAllowedError,
     );
   });
 });

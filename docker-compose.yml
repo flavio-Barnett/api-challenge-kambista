@@ -23,6 +23,7 @@ services:
         required: false
     environment:
       NODE_ENV: production
+      REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-false}
       PORT: 3000
       MONGODB_URI: mongodb://mongo:27017/kambista
     depends_on:

@@ -10,6 +10,11 @@ const commaSeparatedList = z
       .filter((item) => item.length > 0),
   );
 
+const optionalBoolean = z
+  .enum(['true', 'false'])
+  .transform((value) => value === 'true')
+  .optional();
+
 const DURATION_PATTERN = /^\d+[smhd]$/;
 
 function unitInMilliseconds(unit: string): number {
@@ -43,6 +48,7 @@ export const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_ACCESS_EXPIRES_IN: tokenLifetime.prefault('15m'),
   REFRESH_TOKEN_EXPIRES_IN: tokenLifetime.prefault('7d'),
+  REFRESH_COOKIE_SECURE: optionalBoolean,
   CORS_ORIGINS: commaSeparatedList,
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   EXCHANGE_RATE_PROVIDER_URL: z

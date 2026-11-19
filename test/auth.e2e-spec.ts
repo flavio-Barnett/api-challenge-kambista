@@ -1,31 +1,47 @@
 import request from 'supertest';
 
-import { startTestApp, type TestApp } from './support/test-app.js';
+import {
+  ALLOWED_ORIGIN,
+  startTestApp,
+  type TestApp,
+} from './support/test-app.js';
 import { bearer, registerUser } from './support/users.js';
 
-interface SessionBody {
-  readonly refresh_token: string;
+const REFRESH_COOKIE = 'refresh_token';
+
+function refreshCookie(response: request.Response): string {
+  const setCookie = response.get('Set-Cookie') ?? [];
+  const cookie = setCookie.find((value) =>
+    value.startsWith(`${REFRESH_COOKIE}=`),
+  );
+  if (cookie === undefined) {
+    throw new Error('The response did not set the refresh token cookie');
+  }
+  return cookie;
+}
+
+function cookiePair(cookie: string): string {
+  return cookie.split(';')[0] ?? '';
 }
 
 describe('Auth (e2e)', () => {
   let testApp: TestApp;
 
-  async function startSession(email: string): Promise<SessionBody> {
+  async function startSession(email: string): Promise<string> {
     const response = await request(testApp.server)
       .post('/v1/auth/register')
       .send({ nombre: 'Sesión', email, password: 'Secreta123' })
       .expect(201);
-    return response.body as SessionBody;
+    return cookiePair(refreshCookie(response));
   }
 
-  function refresh(refreshToken: string): request.Test {
-    return request(testApp.server)
-      .post('/v1/auth/refresh')
-      .send({ refresh_token: refreshToken });
+  function refresh(cookie?: string): request.Test {
+    const call = request(testApp.server).post('/v1/auth/refresh');
+    return cookie === undefined ? call : call.set('Cookie', cookie);
   }
 
   beforeAll(async () => {
-    testApp = await startTestApp();
+    testApp = await startTestApp({ trustProxyHops: 1 });
   });
 
   afterAll(async () => {
@@ -40,7 +56,6 @@ describe('Auth (e2e)', () => {
 
     expect(Object.keys(response.body as object)).toEqual([
       'access_token',
-      'refresh_token',
       'usuario',
     ]);
     expect(response.body).toMatchObject({
@@ -74,6 +89,25 @@ describe('Auth (e2e)', () => {
     expect(response.body).toMatchObject({
       usuario: { email: 'login@test.com', rol: 'user' },
     });
+    expect(refreshCookie(response)).toContain('HttpOnly');
+  });
+
+  it('sets the refresh token in a restricted httponly cookie', async () => {
+    const response = await request(testApp.server)
+      .post('/v1/auth/register')
+      .send({
+        nombre: 'Cookie',
+        email: 'cookie@test.com',
+        password: 'Secreta123',
+      })
+      .expect(201);
+
+    const cookie = refreshCookie(response);
+    expect(cookie).toContain('HttpOnly');
+    expect(cookie).toContain('SameSite=Strict');
+    expect(cookie).toContain('Path=/v1/auth');
+    expect(cookie).toContain(`Max-Age=${String(7 * 24 * 60 * 60)}`);
+    expect(response.body).not.toHaveProperty('refresh_token');
   });
 
   it('returns the authenticated user', async () => {
@@ -119,25 +153,101 @@ describe('Auth (e2e)', () => {
     });
   });
 
-  it('rotates the refresh token and rejects the used one', async () => {
-    const session = await startSession('rotate@test.com');
+  it('rotates the refresh token cookie and rejects the used one', async () => {
+    const browser = request.agent(testApp.server);
+    const registered = await browser
+      .post('/v1/auth/register')
+      .send({
+        nombre: 'Rota',
+        email: 'rotate@test.com',
+        password: 'Secreta123',
+      })
+      .expect(201);
+    const original = cookiePair(refreshCookie(registered));
 
-    const rotated = await refresh(session.refresh_token).expect(200);
-    const rotatedBody = rotated.body as SessionBody;
+    const rotated = await browser.post('/v1/auth/refresh').expect(200);
 
-    await refresh(rotatedBody.refresh_token).expect(200);
-    await refresh(session.refresh_token).expect(401);
+    expect(Object.keys(rotated.body as object)).toEqual(['access_token']);
+    expect(cookiePair(refreshCookie(rotated))).not.toBe(original);
+    await browser.post('/v1/auth/refresh').expect(200);
+    await refresh(original).expect(401);
   });
 
-  it('revokes the refresh token on logout', async () => {
-    const session = await startSession('logout@test.com');
+  it('clears the cookie on logout and revokes the token', async () => {
+    const browser = request.agent(testApp.server);
+    const registered = await browser
+      .post('/v1/auth/register')
+      .send({
+        nombre: 'Sale',
+        email: 'logout@test.com',
+        password: 'Secreta123',
+      })
+      .expect(201);
+    const cookie = cookiePair(refreshCookie(registered));
 
-    await request(testApp.server)
+    const response = await browser.post('/v1/auth/logout').expect(204);
+
+    expect(refreshCookie(response)).toMatch(/Expires=Thu, 01 Jan 1970/);
+    await browser.post('/v1/auth/refresh').expect(401);
+    await refresh(cookie).expect(401);
+  });
+
+  it('logs out without a cookie', async () => {
+    await request(testApp.server).post('/v1/auth/logout').expect(204);
+  });
+
+  it('rejects a refresh without the cookie', async () => {
+    const response = await refresh().expect(401);
+
+    expect(response.body).toMatchObject({
+      error: { code: 'INVALID_REFRESH_TOKEN' },
+    });
+  });
+
+  it('rejects a refresh from an origin that is not allowed', async () => {
+    const cookie = await startSession('origin@test.com');
+
+    const response = await refresh(cookie)
+      .set('Origin', 'https://evil.example')
+      .expect(403);
+
+    expect(response.body).toMatchObject({
+      error: { code: 'ORIGIN_NOT_ALLOWED' },
+    });
+  });
+
+  it('rejects a logout from an origin that is not allowed', async () => {
+    const cookie = await startSession('logout-origin@test.com');
+
+    const response = await request(testApp.server)
       .post('/v1/auth/logout')
-      .send({ refresh_token: session.refresh_token })
-      .expect(204);
+      .set('Cookie', cookie)
+      .set('Origin', 'https://evil.example')
+      .expect(403);
 
-    await refresh(session.refresh_token).expect(401);
+    expect(response.body).toMatchObject({
+      error: { code: 'ORIGIN_NOT_ALLOWED' },
+    });
+  });
+
+  it('accepts the API own origin as seen through a proxy', async () => {
+    const cookie = await startSession('proxy@test.com');
+
+    await refresh(cookie)
+      .set('X-Forwarded-Proto', 'https')
+      .set('X-Forwarded-Host', 'api.kambista.test')
+      .set('Origin', 'https://api.kambista.test')
+      .expect(200);
+  });
+
+  it('allows credentials for the frontend origin', async () => {
+    const cookie = await startSession('cors@test.com');
+
+    const response = await refresh(cookie)
+      .set('Origin', ALLOWED_ORIGIN)
+      .expect(200);
+
+    expect(response.headers['access-control-allow-credentials']).toBe('true');
   });
 
   it('rejects a protected route without a token', async () => {
