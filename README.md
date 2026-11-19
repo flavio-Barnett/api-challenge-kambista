@@ -67,6 +67,7 @@ Se validan con Zod al iniciar: si falta alguna obligatoria o tiene un formato in
 | `JWT_ACCESS_SECRET`                 | Sí          | —                                              | Secreto del access token (mínimo 32 caracteres)                           |
 | `JWT_ACCESS_EXPIRES_IN`             | No          | `15m`                                          | Duración del access token (`30s`, `15m`, `12h`, `7d`)                     |
 | `REFRESH_TOKEN_EXPIRES_IN`          | No          | `7d`                                           | Duración del refresh token                                                |
+| `REFRESH_COOKIE_SECURE`             | No          | `true` en producción, `false` en otro caso     | Envía la cookie del refresh token solo por HTTPS                          |
 | `CORS_ORIGINS`                      | No          | vacío                                          | Orígenes permitidos, separados por comas                                  |
 | `TRUST_PROXY_HOPS`                  | No          | `0`                                            | Proxies delante de la API; define de dónde se toma la IP real del cliente |
 | `EXCHANGE_RATE_PROVIDER_URL`        | No          | `https://api.apis.net.pe/v1/tipo-cambio-sunat` | Proveedor externo del tipo de cambio                                      |
@@ -84,15 +85,15 @@ Las pruebas e2e levantan la API contra un MongoDB en memoria y reemplazan a SUNA
 
 ## Autenticación
 
-| Método | Ruta                | Acceso  | Descripción                                                 |
-| ------ | ------------------- | ------- | ----------------------------------------------------------- |
-| POST   | `/v1/auth/register` | Público | Registra un usuario con rol `user` e inicia su sesión       |
-| POST   | `/v1/auth/login`    | Público | Devuelve `access_token`, `refresh_token` y `usuario`        |
-| POST   | `/v1/auth/refresh`  | Público | Entrega un nuevo par de tokens a cambio del `refresh_token` |
-| POST   | `/v1/auth/logout`   | Público | Revoca el `refresh_token`                                   |
-| GET    | `/v1/auth/me`       | Token   | Devuelve el usuario autenticado                             |
+| Método | Ruta                | Acceso  | Descripción                                              |
+| ------ | ------------------- | ------- | -------------------------------------------------------- |
+| POST   | `/v1/auth/register` | Público | Registra un usuario con rol `user` e inicia su sesión    |
+| POST   | `/v1/auth/login`    | Público | Devuelve `{ access_token, usuario }`                     |
+| POST   | `/v1/auth/refresh`  | Cookie  | Devuelve un `access_token` nuevo y rota el refresh token |
+| POST   | `/v1/auth/logout`   | Cookie  | Revoca el refresh token y borra la cookie                |
+| GET    | `/v1/auth/me`       | Token   | Devuelve el usuario autenticado                          |
 
-Las rutas protegidas esperan el header `Authorization: Bearer <access_token>`.
+Las rutas protegidas esperan el header `Authorization: Bearer <access_token>`. El refresh token no viaja en el JSON: register, login y refresh lo envían en la cookie `refresh_token` (`HttpOnly`, `SameSite=Strict`, `Path=/v1/auth`), y refresh y logout la leen de ahí. Refresh y logout solo aceptan peticiones sin header `Origin` (Postman o curl), del mismo origen de la API (Swagger) o de un origen listado en `CORS_ORIGINS`; cualquier otro recibe 403 `ORIGIN_NOT_ALLOWED`.
 
 ### Crear un administrador
 
@@ -173,6 +174,7 @@ src/
 - **Configuración validada al arrancar:** un esquema Zod valida el entorno y la aplicación no inicia si algo falta o es inválido.
 - **Rutas protegidas por defecto:** un guard global exige JWT en todas las rutas; solo las marcadas como públicas (registro, login, refresh, logout y health) quedan abiertas.
 - **Access token corto y refresh token rotado:** el JWT dura 15 minutos; el refresh token es un valor aleatorio que se guarda como hash SHA-256 y se reemplaza en cada uso. Reutilizar uno ya usado revoca todas las sesiones del usuario.
+- **Refresh token en cookie `HttpOnly`:** JavaScript no puede leerlo, así que un XSS no puede robar la sesión larga. El access token sigue en el header `Bearer`, como define el contrato del enunciado, y el navegador nunca lo envía solo. Solo refresh y logout reciben la cookie, y están protegidos contra CSRF con `SameSite=Strict` y la validación del `Origin`. Para que la cookie viaje, frontend y API deben compartir sitio (por ejemplo `app.dominio.com` y `api.dominio.com`).
 - **Contraseñas con bcrypt (costo 12):** el login responde el mismo 401 si el email no existe o la contraseña es incorrecta, y en ambos casos ejecuta una comparación para no revelar qué emails están registrados.
 - **Límite de intentos de login en MongoDB:** cada intento se cuenta de forma atómica antes de verificar la contraseña; superados 5 intentos fallidos por email e IP en 15 minutos, la API responde 429. Se guarda en Mongo con índice TTL para que funcione con varias instancias de la API.
 - **Tipo de cambio con precisión exacta:** compra y venta se manejan con `decimal.js` en el código y se guardan como `Decimal128` en MongoDB, para no perder céntimos por redondeos de punto flotante.
