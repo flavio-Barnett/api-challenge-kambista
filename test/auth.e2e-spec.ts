@@ -3,25 +3,29 @@ import request from 'supertest';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { bearer, registerUser } from './support/users.js';
 
-interface SessionBody {
-  readonly refresh_token: string;
+const REFRESH_COOKIE = 'refresh_token';
+
+function refreshCookie(response: request.Response): string {
+  const setCookie = response.get('Set-Cookie') ?? [];
+  const cookie = setCookie.find((value) =>
+    value.startsWith(`${REFRESH_COOKIE}=`),
+  );
+  if (cookie === undefined) {
+    throw new Error('The response did not set the refresh token cookie');
+  }
+  return cookie;
+}
+
+function cookiePair(cookie: string): string {
+  return cookie.split(';')[0] ?? '';
 }
 
 describe('Auth (e2e)', () => {
   let testApp: TestApp;
 
-  async function startSession(email: string): Promise<SessionBody> {
-    const response = await request(testApp.server)
-      .post('/v1/auth/register')
-      .send({ nombre: 'Sesión', email, password: 'Secreta123' })
-      .expect(201);
-    return response.body as SessionBody;
-  }
-
-  function refresh(refreshToken: string): request.Test {
-    return request(testApp.server)
-      .post('/v1/auth/refresh')
-      .send({ refresh_token: refreshToken });
+  function refresh(cookie?: string): request.Test {
+    const call = request(testApp.server).post('/v1/auth/refresh');
+    return cookie === undefined ? call : call.set('Cookie', cookie);
   }
 
   beforeAll(async () => {
@@ -40,7 +44,6 @@ describe('Auth (e2e)', () => {
 
     expect(Object.keys(response.body as object)).toEqual([
       'access_token',
-      'refresh_token',
       'usuario',
     ]);
     expect(response.body).toMatchObject({
@@ -119,25 +122,43 @@ describe('Auth (e2e)', () => {
     });
   });
 
-  it('rotates the refresh token and rejects the used one', async () => {
-    const session = await startSession('rotate@test.com');
+  it('rotates the refresh token cookie and rejects the used one', async () => {
+    const browser = request.agent(testApp.server);
+    const registered = await browser
+      .post('/v1/auth/register')
+      .send({
+        nombre: 'Rota',
+        email: 'rotate@test.com',
+        password: 'Secreta123',
+      })
+      .expect(201);
+    const original = cookiePair(refreshCookie(registered));
 
-    const rotated = await refresh(session.refresh_token).expect(200);
-    const rotatedBody = rotated.body as SessionBody;
+    const rotated = await browser.post('/v1/auth/refresh').expect(200);
 
-    await refresh(rotatedBody.refresh_token).expect(200);
-    await refresh(session.refresh_token).expect(401);
+    expect(Object.keys(rotated.body as object)).toEqual(['access_token']);
+    expect(cookiePair(refreshCookie(rotated))).not.toBe(original);
+    await browser.post('/v1/auth/refresh').expect(200);
+    await refresh(original).expect(401);
   });
 
-  it('revokes the refresh token on logout', async () => {
-    const session = await startSession('logout@test.com');
+  it('clears the cookie on logout and revokes the token', async () => {
+    const browser = request.agent(testApp.server);
+    const registered = await browser
+      .post('/v1/auth/register')
+      .send({
+        nombre: 'Sale',
+        email: 'logout@test.com',
+        password: 'Secreta123',
+      })
+      .expect(201);
+    const cookie = cookiePair(refreshCookie(registered));
 
-    await request(testApp.server)
-      .post('/v1/auth/logout')
-      .send({ refresh_token: session.refresh_token })
-      .expect(204);
+    const response = await browser.post('/v1/auth/logout').expect(204);
 
-    await refresh(session.refresh_token).expect(401);
+    expect(refreshCookie(response)).toMatch(/Expires=Thu, 01 Jan 1970/);
+    await browser.post('/v1/auth/refresh').expect(401);
+    await refresh(cookie).expect(401);
   });
 
   it('rejects a protected route without a token', async () => {

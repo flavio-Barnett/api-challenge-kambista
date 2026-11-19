@@ -11,6 +11,7 @@ import { resolveRequestId } from './request-id.js';
 const REDACTED_PATHS = [
   'req.headers.authorization',
   'req.headers.cookie',
+  'res.headers["set-cookie"]',
   'password',
   'token',
   'accessToken',

@@ -9,6 +9,11 @@ export function setupSwagger(app: INestApplication): void {
     .setDescription('Currency exchange operations between PEN and USD')
     .setVersion('1.0')
     .addBearerAuth()
+    .addCookieAuth(
+      'refresh_token',
+      { type: 'apiKey', in: 'cookie', name: 'refresh_token' },
+      'refresh_token',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(SWAGGER_PATH, app, document);

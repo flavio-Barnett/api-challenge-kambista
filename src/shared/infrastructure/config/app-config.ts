@@ -47,6 +47,10 @@ export class AppConfig {
     return this.get('REFRESH_TOKEN_EXPIRES_IN');
   }
 
+  get refreshCookieSecure(): boolean {
+    return this.get('REFRESH_COOKIE_SECURE') ?? this.isProduction;
+  }
+
   get exchangeRateProviderUrl(): string {
     return this.get('EXCHANGE_RATE_PROVIDER_URL');
   }

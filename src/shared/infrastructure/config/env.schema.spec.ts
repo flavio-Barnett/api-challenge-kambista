@@ -36,6 +36,18 @@ describe('envSchema', () => {
     ]);
   });
 
+  it('parses the refresh cookie secure flag', () => {
+    expect(envSchema.parse(validEnv).REFRESH_COOKIE_SECURE).toBeUndefined();
+    expect(
+      envSchema.parse({ ...validEnv, REFRESH_COOKIE_SECURE: 'false' })
+        .REFRESH_COOKIE_SECURE,
+    ).toBe(false);
+    expect(
+      envSchema.safeParse({ ...validEnv, REFRESH_COOKIE_SECURE: 'yes' })
+        .success,
+    ).toBe(false);
+  });
+
   it('rejects a missing database uri', () => {
     const result = envSchema.safeParse({ ...validEnv, MONGODB_URI: undefined });
 
