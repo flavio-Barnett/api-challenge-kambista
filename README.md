@@ -73,6 +73,8 @@ Se validan con Zod al iniciar: si falta alguna obligatoria o tiene un formato in
 | `EXCHANGE_RATE_PROVIDER_URL`        | No          | `https://api.apis.net.pe/v1/tipo-cambio-sunat` | Proveedor externo del tipo de cambio                                      |
 | `EXCHANGE_RATE_REFRESH_INTERVAL_MS` | No          | `30000`                                        | Cada cuántos milisegundos se actualiza el tipo de cambio                  |
 
+Para usar el frontend en local, `CORS_ORIGINS` debe incluir el origen donde corre (por defecto `http://localhost:3001`, que ya viene en `.env.example`). Si levantas el frontend en otro puerto, actualízalo.
+
 ## Pruebas
 
 ```bash
